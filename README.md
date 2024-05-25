@@ -1,11 +1,6 @@
 # NIDS-Net
 The approach for Novel Instance Detection and Segmentation (NIDS)
 
-## Features
-- Zero-shot text-to-bbox approach for object detection using GroundingDINO.
-- Zero-shot bbox-to-mask approach for object detection using SegmentAnything (MobileSAM).
-
-
 ## Getting Started
 
 ### Prerequisites
@@ -15,7 +10,7 @@ The approach for Novel Instance Detection and Segmentation (NIDS)
 
 ### Installation
 ```sh
-git clone <this_repo>
+git clone https://github.com/YoungSean/NIDS-Net.git
 pip install -r requirements.txt
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 python setup.py install
@@ -94,6 +89,8 @@ python lmo_test_eval_gdino_FFA.py
 
 ```
 
+## BOP segmentation code will be released soon.
+
 ## Acknowledgments
 
 This project is based on the following repositories:
@@ -105,5 +102,4 @@ This project is based on the following repositories:
 - [SAM](https://github.com/facebookresearch/segment-anything)
 - [DINOv2](https://github.com/facebookresearch/dinov2)
 
-## License
-This project is licensed under the MIT License
+

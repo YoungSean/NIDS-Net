@@ -34,8 +34,8 @@ from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import register_coco_instances
 
 
-sys.path.append("../dinov2-main")
-from dinov2.eval.setup import get_args_parser as get_setup_args_parser
+# sys.path.append("../dinov2-main")
+# from dinov2.eval.setup import get_args_parser as get_setup_args_parser
 
 
 sys.path.append(".")
@@ -47,7 +47,7 @@ from tqdm import trange
 from adapter import ModifiedClipAdapter, WeightAdapter
 from utils.img_utils import get_masked_image
 
-logger = logging.getLogger("dinov2")
+# logger = logging.getLogger("dinov2")
 
 
 def get_args_parser(
@@ -55,8 +55,8 @@ def get_args_parser(
         parents: Optional[List[argparse.ArgumentParser]] = [],
         add_help: bool = True,
 ):
-    setup_args_parser = get_setup_args_parser(parents=parents, add_help=False)
-    parents = [setup_args_parser]
+    #setup_args_parser = get_setup_args_parser(parents=parents, add_help=False)
+    parents = []
 
     parser = argparse.ArgumentParser(
         description=description,
@@ -77,16 +77,16 @@ def get_args_parser(
     )
     parser.add_argument(
         "--imsize",
-        default=224,
+        default=448,
         type=int,
         help="Image size",
     )
-    parser.add_argument(
-        "--pretrained_weights",
-        default="dinov2_vits14_pretrain.pth",
-        type=str,
-        help="Path to pretrained weights to evaluate.",
-    )
+    # parser.add_argument(
+    #     "--pretrained_weights",
+    #     default="dinov2_vits14_pretrain.pth",
+    #     type=str,
+    #     help="Path to pretrained weights to evaluate.",
+    # )
     parser.add_argument(
         "--output_dir",
         default="./output",
@@ -119,10 +119,10 @@ imsize = 448
 tag = "mask"  # bbox
 img_id = 39
 use_gb_sim = False
-args = args_parser.parse_args(args=["--config-file", "dinov2/configs/eval/vitl14_pretrain.yaml",  # vits14_pretrain
+args = args_parser.parse_args(args=[#"--config-file", "dinov2/configs/eval/vitl14_pretrain.yaml",  # vits14_pretrain
                                     "--train_path", "database/Objects",
                                     "--test_path", "test_data/test_1/test_"+str(img_id).zfill(3)+".jpg",  # test_002
-                                    "--pretrained_weights", "dinov2/configs/dinov2_vitl14_pretrain.pth",  #dinov2_vits14_pretrain
+                                    #"--pretrained_weights", "dinov2/configs/dinov2_vitl14_pretrain.pth",  #dinov2_vits14_pretrain
                                     "--output_dir", "exps/demo0501_" + str(imsize) + "_" + tag,
                                     ])
 os.makedirs(args.output_dir, exist_ok=True)

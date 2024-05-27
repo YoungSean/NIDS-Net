@@ -21,6 +21,10 @@ python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 ```
 After installation, there will be a folder named "ckpts". Move the SAM weight to "ckpts/sam_weights/sam_vit_h_4b8939.pth".
+```shell
+mkdir ckpts/sam_weights
+mv sam_vit_h_4b8939.pth ckpts/sam_weights
+```
 
 
 ### Preparing Datasets

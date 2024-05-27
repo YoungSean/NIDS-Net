@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
-import time
-# # Instance Detection
-# 
+
+
 # Testing:
 # 1. Object Proposal Generation by Grounded SAM
 # 2. Feature Extraction for proposals by DINOv2
@@ -10,7 +9,7 @@ import time
 
 # In[6]:
 
-
+import time
 import argparse
 import cv2
 import glob
@@ -81,12 +80,6 @@ def get_args_parser(
         type=int,
         help="Image size",
     )
-    # parser.add_argument(
-    #     "--pretrained_weights",
-    #     default="dinov2_vits14_pretrain.pth",
-    #     type=str,
-    #     help="Path to pretrained weights to evaluate.",
-    # )
     parser.add_argument(
         "--output_dir",
         default="./output",
@@ -119,10 +112,8 @@ imsize = 448
 tag = "mask"  # bbox
 img_id = 39
 use_gb_sim = False
-args = args_parser.parse_args(args=[#"--config-file", "dinov2/configs/eval/vitl14_pretrain.yaml",  # vits14_pretrain
-                                    "--train_path", "database/Objects",
+args = args_parser.parse_args(args=["--train_path", "database/Objects",
                                     "--test_path", "test_data/test_1/test_"+str(img_id).zfill(3)+".jpg",  # test_002
-                                    #"--pretrained_weights", "dinov2/configs/dinov2_vitl14_pretrain.pth",  #dinov2_vits14_pretrain
                                     "--output_dir", "exps/demo0501_" + str(imsize) + "_" + tag,
                                     ])
 os.makedirs(args.output_dir, exist_ok=True)
@@ -174,8 +165,6 @@ with open(os.path.join(output_dir, json_filename), 'r') as f:
 object_features = torch.Tensor(feat_dict['features']).cuda()
 object_features = nn.functional.normalize(object_features, dim=1, p=2)
 print("object_features: ", object_features.shape)
-# ### Inference
-# #### 1. Instance Mask Generation by SAM
 
 # In[10]:
 from absl import app, logging
@@ -194,6 +183,8 @@ SAM = SegmentAnythingPredictor(vit_model="vit_h")
 
 logging.info("Open the image and convert to RGB format")
 image_pil = PILImg.open(image_path).convert("RGB")
+
+# #### 1. Get object proposals with Grounded-SAM
 accurate_bboxs, masks = get_bbox_masks_from_gdino_sam(image_path, gdino, SAM, text_prompt='objects', visualize=False)
 
 
@@ -202,30 +193,29 @@ accurate_bboxs, masks = get_bbox_masks_from_gdino_sam(image_path, gdino, SAM, te
 # In[11]:
 
 start_time = time.time()
-# Define transformations to be applied to the images
-masked_img_size = 224
-transform = T.Compose([
-            T.Resize((masked_img_size, masked_img_size), interpolation=T.InterpolationMode.BICUBIC),
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+scene_features_list = []
+proposals_list = []
+scene_name_list = []
 mask = masks.cpu().numpy()
 accurate_bboxs = accurate_bboxs.cpu().numpy()
+scene_name = os.path.basename(image_path).split('.')[0]
+scene_name_list.append(scene_name)
 rois, sel_rois, cropped_imgs, cropped_masks = get_object_proposal(args.test_path, accurate_bboxs, masks, tag=tag, ratio=0.25, save_rois=True, output_dir=args.output_dir, save_proposal=True)
 scene_features = []
 for i in trange(len(cropped_imgs)):
     img = cropped_imgs[i]
     mask = cropped_masks[i]
     ffa_feature= get_features([img], [mask], encoder, img_size=imsize)
-    # ffa_feature = get_cls_token([img], [mask], encoder, img_size=imsize)
-    masked_image = get_masked_image(img, mask)
-    masked_img_tensor = transform(masked_image).unsqueeze(0).cuda()
     with torch.no_grad():
         if use_adapter:
             ffa_feature = adapter(ffa_feature)
     scene_features.append(ffa_feature)
 scene_features = torch.cat(scene_features, dim=0)
 scene_features = nn.functional.normalize(scene_features, dim=1, p=2)
+
+scene_features_list.append(scene_features)
+# total_proposals[scene_name] = sel_rois
+proposals_list.append(sel_rois)
 # rgb_normalize = T.Compose(
 #             [
 #                 T.ToTensor(),
@@ -262,30 +252,29 @@ print(f"Total running time: {end_time - start_time} seconds")
 scene_name = os.path.basename(args.test_path).split('.')[0]
 
 
-# #### 4. Test Data Loader (Proposals) and Feature Extraction by DINOv2
 
 # In[13]:
 
 
-transform = pth_transforms.Compose([pth_transforms.ToTensor(),])
-
-# for demo
-scene_dataset = RealWorldDataset(args.output_dir, scene_name, data=rois, transform=transform, imsize=args.imsize)
+# transform = pth_transforms.Compose([pth_transforms.ToTensor(),])
+#
+# # for demo
+# scene_dataset = RealWorldDataset(args.output_dir, scene_name, data=rois, transform=transform, imsize=args.imsize)
 # scene_features = get_scene_feature(args.output_dir, scene_name, scene_dataset, model, args.batch_size, args.num_workers)
 
 
-# ####  4. Compute Cosine Similarity and Proposal/Instance Matching
+# ####  3. Compute Cosine Similarity and Proposal/Instance Matching
 
 # In[7]:
 
 # reshape scene feature matrix
-scene_cnt = [0, *scene_dataset.cfg['length']]
-scene_idx = [sum(scene_cnt[:i + 1]) for i in range(len(scene_cnt))]
-scene_features_list = [scene_features[scene_idx[i]:scene_idx[i + 1]] for i in
-                        range(len(scene_dataset.cfg['length']))]
-
-proposals = scene_dataset.cfg['proposals']
-proposals_list = [proposals[scene_idx[i]:scene_idx[i + 1]] for i in range(len(scene_dataset.cfg['length']))]
+# scene_cnt = [0, *scene_dataset.cfg['length']]
+# scene_idx = [sum(scene_cnt[:i + 1]) for i in range(len(scene_cnt))]
+# scene_features_list = [scene_features[scene_idx[i]:scene_idx[i + 1]] for i in
+#                         range(len(scene_dataset.cfg['length']))]
+#
+# proposals = scene_dataset.cfg['proposals']
+# proposals_list = [proposals[scene_idx[i]:scene_idx[i + 1]] for i in range(len(scene_dataset.cfg['length']))]
 
 num_object = 100 # len(object_dataset.cfg['obj_name'])
 num_example = len(object_features) // num_object
@@ -386,12 +375,12 @@ with open(os.path.join(args.output_dir, "coco_instances_results.json"), "w") as 
     json.dump(results, f)
 
 predictions = dict(
-    [(k, {'image_id': -1, 'instances': []}) for k in range(len(scene_dataset.cfg['scene_name']))])
+    [(k, {'image_id': -1, 'instances': []}) for k in range(len(scene_name_list))])
 for idx in range(len(results)):
     id = results[idx]['image_id']
-    predictions[scene_dataset.cfg['scene_name'].index('test_' + str(id).zfill(3))]['image_id'] = id
+    predictions[scene_name_list.index('test_' + str(id).zfill(3))]['image_id'] = id
 
-    predictions[scene_dataset.cfg['scene_name'].index('test_' + str(id).zfill(3))]['instances'].append(results[idx])
+    predictions[scene_name_list.index('test_' + str(id).zfill(3))]['instances'].append(results[idx])
 
 torch.save(predictions, os.path.join(args.output_dir, "instances_predictions.pth"))
 
@@ -428,7 +417,7 @@ os.makedirs(pred_dir, exist_ok=True)
 test_metadata = MetadataCatalog.get("coco_InsDet_test")
 test_dataset_dicts = DatasetCatalog.get("coco_InsDet_test")
 
-idx = scene_dataset.cfg['scene_name'].index(scene_name)
+idx = scene_name_list.index(scene_name)
 # d = test_dataset_dicts[int(scene_name.split('_')[-1])]
 d = test_dataset_dicts[0] # idx
 img = cv2.imread(d["file_name"])

@@ -177,6 +177,8 @@ def get_object_proposal(image_path, bboxs, masks, tag="mask", ratio=1.0, save_ro
         sel_roi['image_id'] = int(scene_name.split('_')[-1])
         sel_roi['bbox'] = [int(x0 * ratio), int(y0 * ratio), int((x1 - x0) * ratio), int((y1 - y0) * ratio)]
         sel_roi['area'] = np.count_nonzero(mask)
+        # if you need segmentation mask, uncomment the following line
+        # sel_roi['mask'] = mask  # boolean numpy array. H X W
         sel_roi['roi_dir'] = os.path.join(output_dir, scene_name, scene_name + '_' + str(ind).zfill(3) + '.png')
         sel_roi['image_dir'] = image_path
         sel_roi['image_width'] = scene_image.shape[1]

@@ -110,8 +110,7 @@ def get_args_parser(
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 448
 tag = "mask"  # bbox
-img_id = 39
-use_gb_sim = False
+img_id = 2
 args = args_parser.parse_args(args=["--train_path", "database/Objects",
                                     "--test_path", "test_data/test_1/test_"+str(img_id).zfill(3)+".jpg",  # test_002
                                     "--output_dir", "exps/demo0501_" + str(imsize) + "_" + tag,
@@ -125,7 +124,7 @@ encoder.to('cuda')
 encoder.eval()
 
 # Assuming the model's architecture is defined in 'FeatureVectorModel' class
-use_adapter = True
+use_adapter = False
 adapter_type = "weight"
 if use_adapter:
     input_features = 1024

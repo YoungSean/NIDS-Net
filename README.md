@@ -1,5 +1,11 @@
 # NIDS-Net
-The approach for Novel Instance Detection and Segmentation (NIDS)
+The unified framework for Novel Instance Detection and Segmentation (NIDS).
+
+![NIDS-Net.](imgs/fw0.png)
+
+## Example
+![Demo detection results on real datasets, High-resolution and RoboTools.](imgs/det6.png)
+
 
 ## Getting Started
 
@@ -26,8 +32,9 @@ mkdir ckpts/sam_weights
 mv sam_vit_h_4b8939.pth ckpts/sam_weights
 ```
 
-
 ### Preparing Datasets
+<details>
+<summary> Setting Up 4 Detection Datasets </summary>
 We do not need training datasets for detectors. We can use template embeddings to train the adapter.
 
 #### High-resolution Dataset
@@ -63,8 +70,13 @@ database
 #### RoboTools, LM-O and YCB-V
 VoxDet provides the [datasets](https://github.com/Jaraxxus-Me/VoxDet).
 Save and unzip them in '$ROOT/datasets' to get "datasets/RoboTools", "datasets/lmo", "datasets/ycbv". 
+</details>
+
 
 ## Usage
+We prepare demo google colabs: [inference on a high-resolution image]() and [Training free one-shot detection](https://colab.research.google.com/drive/1Wam974xV82oq-uLbnWstsDSaoEpSWvP1?usp=sharing).
+
+
 1. Check GroundingDINO and SAM
 - SAM: [`test_sam.py`](test_sam.py)
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)
@@ -105,5 +117,6 @@ This project is based on the following repositories:
 - [InsDet](https://github.com/insdet/instance-detection)
 - [SAM](https://github.com/facebookresearch/segment-anything)
 - [DINOv2](https://github.com/facebookresearch/dinov2)
+- [SAM6D](https://github.com/JiehongLin/SAM-6D)
 
 

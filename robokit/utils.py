@@ -76,7 +76,7 @@ def annotate(image_source, boxes, logits, phrases):
             for phrase, logit
             in zip(phrases, logits)
         ]
-        box_annotator = sv.BoxAnnotator(thickness=20)
+        box_annotator = sv.BoxAnnotator(thickness=2)
         img_pil = PILImg.fromarray(box_annotator.annotate(scene=np.array(image_source), detections=detections, labels=labels))
         return img_pil
     

@@ -130,8 +130,8 @@ if use_adapter:
 
 
 
-# output_dir = './RoboTools_obj_feat' #
-# json_filename = 'object_features.json'
+output_dir = './RoboTools_obj_feat' #
+json_filename = 'object_features.json'
 if use_adapter:
     output_dir = './adapted_obj_feats'
     json_filename = 'robo_'+adapter_args + '.json'

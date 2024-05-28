@@ -173,6 +173,7 @@ if __name__ == '__main__':
 
     save_model = True
     adapter_args = f'{dataset_name}_temp_{temperature}_epoch_{epochs}_lr_{learning_rate}_bs_{batch_size}_vec_reduction_{reduction}'
+    os.makedirs('adapter_weights/adapter2FC', exist_ok=True)
     if save_model:
         # Assuming your model is named 'model'
         # model_path = f'adapter_weights/bop23/{adapter_args}_weights.pth'  # Define the path where you want to save the model
@@ -206,6 +207,7 @@ if __name__ == '__main__':
         feat_dict['features'] = adatped_features.detach().cpu().tolist()
         # output_dir = f'./bop23_obj_features/{dataset_folder}'
         output_dir = './adapted_obj_feats'
+        os.makedirs(output_dir, exist_ok=True)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         json_filename = f'{adapter_args}.json'

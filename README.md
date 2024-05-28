@@ -8,6 +8,7 @@ The unified framework for Novel Instance Detection and Segmentation (NIDS).
 
 
 ## Getting Started
+We prepare demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1Wam974xV82oq-uLbnWstsDSaoEpSWvP1?usp=sharing).
 
 ### Prerequisites
 - Python 3.7 or higher (tested 3.9)
@@ -74,21 +75,31 @@ Save and unzip them in '$ROOT/datasets' to get "datasets/RoboTools", "datasets/l
 
 
 ## Usage
-We prepare demo google colabs: [inference on a high-resolution image]() and [Training free one-shot detection](https://colab.research.google.com/drive/1Wam974xV82oq-uLbnWstsDSaoEpSWvP1?usp=sharing).
-
+You can directly use the demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1Wam974xV82oq-uLbnWstsDSaoEpSWvP1?usp=sharing).
 
 1. Check GroundingDINO and SAM
 - SAM: [`test_sam.py`](test_sam.py)
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)
 
 2. Generate template embeddings via get_object_features_via_FFA.py.
-   Or you can download the [template embeddings](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). You may adjust their filename to load them in the python scripts.
+Or you can download the [template embeddings](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). You may adjust their filename to load them in the python scripts.
+```shell
+mkdir obj_FFA
+wget https://utdallas.box.com/shared/static/50a8q7i5hc33rovgyavoiw0utuduno39 -O obj_FFA/object_features_vitl14_reg.json
+
+mkdir BOP_obj_feat
+wget https://utdallas.box.com/shared/static/qlyekivfg6svx84xhh5xv39tun3xza1u -O BOP_obj_feat/lmo_object_features.json
+wget https://utdallas.box.com/shared/static/keilpt2i2gk0rrjymg0nkf88bdr734wm -O BOP_obj_feat/ycbv_object_features.json
+```
 3. Train weight adapters in adapter.py (Optional).
 You can try the basic version without the weight adapter.
 4. Inference 
 ```sh
 # for high-resolution dataset
 # demo image
+# in each script, there are some parameters you can adjust
+# for example, the flag "use_adapter", the adapter type and the adapter weight path in demo_eval_gdino_FFA.py
+
 python demo_eval_gdino_FFA.py
 
 # dataset results
@@ -105,7 +116,7 @@ python lmo_test_eval_gdino_FFA.py
 
 ```
 
-## BOP segmentation code will be released soon.
+## BOP segmentation code will be released soon. (TO DO)
 
 ## Acknowledgments
 

@@ -112,7 +112,7 @@ encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14_reg')
 encoder.to('cuda')
 encoder.eval()
 
-use_adapter = True
+use_adapter = False
 adapter_type = "weight"
 if use_adapter:
     input_features = 1024
@@ -135,10 +135,12 @@ if use_adapter:
 
 
 
-output_dir = './adapted_obj_feats'
-json_filename = adapter_args+'.json'
-# output_dir = './BOP_obj_feat'
-# json_filename = 'lmo_object_features.json'
+
+output_dir = './BOP_obj_feat'
+json_filename = 'lmo_object_features.json'
+if use_adapter:
+    output_dir = './adapted_obj_feats'
+    json_filename = adapter_args + '.json'
 with open(os.path.join(output_dir, json_filename), 'r') as f:
     feat_dict = json.load(f)
     print(f"Loaded object features from json file: {json_filename}")

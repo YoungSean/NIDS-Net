@@ -120,7 +120,8 @@ os.makedirs(args.output_dir, exist_ok=True)
 
 # use dino v2 to extract features
 encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14_reg')
-encoder.to('cuda')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+encoder.to(device)
 encoder.eval()
 
 # Assuming the model's architecture is defined in 'FeatureVectorModel' class
@@ -161,7 +162,7 @@ with open(os.path.join(output_dir, json_filename), 'r') as f:
     feat_dict = json.load(f)
 
 
-object_features = torch.Tensor(feat_dict['features']).cuda()
+object_features = torch.Tensor(feat_dict['features']).to(device)
 object_features = nn.functional.normalize(object_features, dim=1, p=2)
 print("object_features: ", object_features.shape)
 
@@ -199,12 +200,12 @@ mask = masks.cpu().numpy()
 accurate_bboxs = accurate_bboxs.cpu().numpy()
 scene_name = os.path.basename(image_path).split('.')[0]
 scene_name_list.append(scene_name)
-rois, sel_rois, cropped_imgs, cropped_masks = get_object_proposal(args.test_path, accurate_bboxs, masks, tag=tag, ratio=0.25, save_rois=True, output_dir=args.output_dir, save_proposal=True)
+rois, sel_rois, cropped_imgs, cropped_masks = get_object_proposal(args.test_path, accurate_bboxs, masks, tag=tag, ratio=0.25, save_rois=False, output_dir=args.output_dir, save_proposal=False)
 scene_features = []
 for i in trange(len(cropped_imgs)):
     img = cropped_imgs[i]
     mask = cropped_masks[i]
-    ffa_feature= get_features([img], [mask], encoder, img_size=imsize)
+    ffa_feature= get_features([img], [mask], encoder,device=device, img_size=imsize)
     with torch.no_grad():
         if use_adapter:
             ffa_feature = adapter(ffa_feature)

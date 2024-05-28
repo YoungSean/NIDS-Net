@@ -8,7 +8,7 @@ The unified framework for Novel Instance Detection and Segmentation (NIDS).
 
 
 ## Getting Started
-We prepare demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection todo](). 
+We prepare demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1IM8TgpNo_9TijopO3PRyZea7MgTUjv30?usp=sharing). 
 ### Prerequisites
 - Python 3.7 or higher (tested 3.9)
 - torch (tested 2.0)

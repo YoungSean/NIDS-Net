@@ -90,7 +90,7 @@ You can directly use the demo google colabs: [inference on a high-resolution ima
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)
 
 2. Generate template embeddings via get_object_features_via_FFA.py.
-Or you can download the [template embeddings and model weights](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files.
+Or you can download the [template embeddings and model weights](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files ending with "vitl_reg.json".
 
 You may adjust their filenames to load them in the python scripts.
 ```shell
@@ -139,8 +139,8 @@ python lmo_test_eval_gdino_FFA.py
 
 # then merge them using utils/merge_COCO_json.py
 # evaluate them with eval_result.py
-
 ```
+We include the ground truth file and our predictions in this [link](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). You can run eval_result.py to evaluate them. Ground truth filenames include "gt", while our predictions include "coco_instances".
 
 ## BOP Benchmark
 We have this [github repo](https://github.com/YoungSean/NIDS-Net-BOP) to generate the results for the BOP benchmark.

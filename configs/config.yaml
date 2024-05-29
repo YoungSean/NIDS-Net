@@ -1,0 +1,7 @@
+params:
+  temperature: 0.05
+  batch_size: 32
+  input_features: 1024
+  adapter_type: weight
+  epochs: 500
+  shuffle: True

@@ -117,7 +117,7 @@ if use_adapter:
         model_path = 'adapter_weights/adapter2FC/'+adapter_args+'_weights.pth'
         adapter = ModifiedClipAdapter(input_features, reduction=4, ratio=0.6).to('cuda')
     elif adapter_type == "weight":
-        adapter_args = 'ins_mv10k_weight_0426_temp_0.5_epoch_20_lr_0.001_bs_1024_vec_reduction_4_L2e4_vitl_reg'
+        adapter_args = ' robo_0421_01_weight_temp_0.05_epoch_80_lr_0.002_bs_1024_vec_reduction_4_L2e4_vitl_reg'
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = WeightAdapter(input_features, reduction=4).to('cuda')
 
@@ -130,13 +130,13 @@ if use_adapter:
 
 
 
-output_dir = './RoboTools_obj_feat' #
+output_dir = './RoboTools_obj_feat'
 json_filename = 'object_features.json'
 if use_adapter:
     output_dir = './adapted_obj_feats'
     json_filename = 'robo_'+adapter_args + '.json'
     print(f'Adapted Object Features: {json_filename}.')
-# os.path.join('./obj_FFA', 'object_features.json')
+
 with open(os.path.join(output_dir, json_filename), 'r') as f:
     feat_dict = json.load(f)
 

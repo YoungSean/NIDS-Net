@@ -90,7 +90,9 @@ You can directly use the demo google colabs: [inference on a high-resolution ima
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)
 
 2. Generate template embeddings via get_object_features_via_FFA.py.
-Or you can download the [template embeddings](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). You may adjust their filenames to load them in the python scripts.
+Or you can download the [template embeddings and model weights](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files.
+
+You may adjust their filenames to load them in the python scripts.
 ```shell
 mkdir obj_FFA
 wget https://utdallas.box.com/shared/static/50a8q7i5hc33rovgyavoiw0utuduno39 -O obj_FFA/object_features_vitl14_reg.json
@@ -103,15 +105,17 @@ wget https://utdallas.box.com/shared/static/e7o7fy00qitmbyg51wb6at9vc1igzupb -O 
 mkdir adapted_obj_feats
 ```
 3. Train weight adapters in adapter.py (Optional).
-You can try the basic version without the weight adapter.
+You can start with the basic version without the weight adapter.
 
-To train the adapter, you need to prepare the training dataset and set some parameters in the script. The following is an example of training the weight adapter for the high-resolution dataset.
+To train the adapter, prepare the training dataset and set parameters in adapter.py. 
 
-After training the adapter, you can use the adapter to fine-tune the template embeddings to save them into the folder like './adapted_obj_feats'. The script will save the adapted template embeddings in the same format as the original template embeddings. 
+After training, use the adapter to fine-tune and save the template embeddings in './adapted_obj_feats'. The script adapter.py can inference the template embeddings with the trained adapter.
 
-With the trained adapter, You can also use utils/transform_adapted_feats.py to transform the original template embeddings to the adapted template embeddings. It was used for the common adapter of BOP datasets.
+If you do not or forget to convert with adapter.py, then you can convert original to adapted template embeddings with 'utils/transform_adapted_feats.py', typically used for BOP datasets. 
 
-To reuse the adapter, you can set the flag "use_adapter" to True and set the adapter weight path in the inference scripts. 
+To reuse the adapter during, enable "use_adapter" and specify the weight adapter weight path in the inference scripts.
+
+Here's how to train the weight adapter for high-resolution data:
 ```shell
 python adapter.py
 ```

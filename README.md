@@ -135,7 +135,9 @@ python lmo_test_eval_gdino_FFA.py
 
 ```
 
-## BOP segmentation code will be released soon. (TO DO)
+## BOP Benchmark
+We have this [github repo](https://github.com/YoungSean/NIDS-Net-BOP) to generate the results for the BOP benchmark.
+
 
 ## Citation
 If you find the method useful in your research, please consider citing:

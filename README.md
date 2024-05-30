@@ -154,6 +154,7 @@ Note: Uncomment this line [sel_roi['mask'] = mask](https://github.com/YoungSean/
 ## BOP Benchmark
 We have this [github repo](https://github.com/YoungSean/NIDS-Net-BOP) to generate the results for the BOP benchmark.
 
+Will merge the BOP repo into this repo soon.
 
 ## Citation
 If you find the method useful in your research, please consider citing:

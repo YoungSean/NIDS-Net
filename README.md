@@ -1,20 +1,26 @@
 # NIDS-Net
 A unified framework for Novel Instance Detection and Segmentation (NIDS).
 
-[arXiv](https://arxiv.org/abs/2405.17859), [Project](https://irvlutd.github.io/NIDSNet/)
+[arXiv](https://arxiv.org/abs/2405.17859), [Project](https://irvlutd.github.io/NIDSNet/), [Code for BOP Challenge](https://github.com/YoungSean/NIDS-Net-BOP)
 
 ## Adapting Pre-Trained Vision Models for Novel Instance Detection and Segmentation
 > Novel Instance Detection and Segmentation (NIDS) aims at detecting and segmenting novel object instances given a few examples of each instance. We propose a unified framework (NIDS-Net) comprising object proposal generation, embedding creation for both instance templates and proposal regions, and embedding matching for instance label assignment. Leveraging recent advancements in large vision methods, we utilize the Grounding DINO and Segment Anything Model (SAM) to obtain object proposals with accurate bounding boxes and masks. Central to our approach is the generation of high-quality instance embeddings. We utilize foreground feature averages of patch embeddings from the DINOv2 ViT backbone, followed by refinement through a weight adapter mechanism that we introduce. We show experimentally that our weight adapter can adjust the embeddings locally within their feature space and effectively limit overfitting. This methodology enables a straightforward matching strategy, resulting in significant performance gains. Our framework surpasses current state-of-the-art methods, demonstrating notable improvements of 22.3, 46.2, 10.3, and 24.0 in average precision (AP) across four detection datasets. In instance segmentation tasks on seven core datasets of the BOP challenge, our method outperforms the top RGB methods by 3.6 AP and remains competitive with the best RGB-D method.
+
+## Framework
+![NIDS-Net.](imgs/fw0.png)
 ## Foreground Feature Averaging (FFA)
 [FFA](https://github.com/s-tian/CUTE)  is used to generate the initial embeddings in our framework.
 ![Foreground Feature Averaging.](imgs/FFA3.png)
 
-## Framework
-![NIDS-Net.](imgs/fw0.png)
-
-## Example
+## Detection Example
 ![Demo detection results on real datasets, High-resolution and RoboTools.](imgs/det6.png)
 
+## BOP Leaderboard
+[Ranked #1: Model-based 2D segmentation of unseen objects – Core datasets](https://bop.felk.cvut.cz/leaderboards/segmentation-unseen-bop23/core-datasets/). 
+
+[Code for BOP Challenge](https://github.com/YoungSean/NIDS-Net-BOP).
+
+![BOP Segmentation Leaderboard.](imgs/leaderboard.png)
 
 ## Getting Started
 We prepare demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1IM8TgpNo_9TijopO3PRyZea7MgTUjv30?usp=sharing). 

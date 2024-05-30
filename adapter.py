@@ -112,30 +112,16 @@ class InfoNCELoss(nn.Module):
 
 if __name__ == '__main__':
     adapter_type = 'weight'
-    # dataset_name = 'lmo_weight_10sigmoid'
-    # dataset_folder = 'lmo'
     dataset_name = f'insDet_{adapter_type}_0523'
-    # dataset_name = f'lmo_{adapter_type}'
     temperature = 0.05
     ratio = 0.6
     feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features_vitl14_reg.json', num_object=100) # 100 objects in total
-    # feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features.json',
-    #                                  num_object=100)  # 100 objects in total
     # Assuming 'features' is your (N, 1024) tensor
     batch_size = 1024
 
     # robo_feature_dataset = FeatureDataset(data_json='./RoboTools_obj_feat/object_features.json', num_object=20) # 20 objects in total
     # ycbv_feature_dataset = FeatureDataset(data_json='./BOP_obj_feat/ycbv_object_features.json', num_object=21) # 21 objects in total
     # lmo_feature_dataset = FeatureDataset(data_json='./BOP_obj_feat/lmo_object_features.json', num_object=8)
-
-    ### bop challenge datasets
-    # lmo_bop23_feature_dataset = FeatureDataset(data_json='bop23_obj_features/lmo/descriptors_pbr.pth', num_object=8)
-    # tless_bop23_feature_dataset = FeatureDataset(data_json='bop23_obj_features/tless/descriptors_pbr.pth', num_object=30, label_offset=8)
-    # tudl_bop23_feature_dataset = FeatureDataset(data_json='bop23_obj_features/tudl/descriptors_pbr.pth', num_object=3, label_offset=38)
-    # icbin_bop23_feature_dataset = FeatureDataset(data_json='bop23_obj_features/icbin/descriptors_pbr.pth', num_object=2, label_offset=41)
-    # itodd_bop23_feature_dataset = FeatureDataset(data_json='bop23_obj_features/itodd/descriptors_pbr.pth', num_object=28, label_offset=43)
-    # hb_bop23_feature_dataset = FeatureDataset(data_json='bop23_obj_features/hb/descriptors_pbr.pth', num_object=33, label_offset=71)
-    # ycbv_bo23_feature_dataset = FeatureDataset(data_json='bop23_obj_features/ycbv/descriptors_pbr.pth', num_object=21, label_offset=104)
 
 
     cur_feature_dataset = feature_dataset
@@ -175,8 +161,6 @@ if __name__ == '__main__':
     adapter_args = f'{dataset_name}_temp_{temperature}_epoch_{epochs}_lr_{learning_rate}_bs_{batch_size}_vec_reduction_{reduction}'
     os.makedirs('adapter_weights/adapter2FC', exist_ok=True)
     if save_model:
-        # Assuming your model is named 'model'
-        # model_path = f'adapter_weights/bop23/{adapter_args}_weights.pth'  # Define the path where you want to save the model
         model_path = f'adapter_weights/adapter2FC/{adapter_args}_weights.pth'
         # Save the model state dictionary
         torch.save(model.state_dict(), model_path)
@@ -188,8 +172,6 @@ if __name__ == '__main__':
         # Assuming model is already defined and loaded with trained weights
         model.eval()  # Set the model to evaluation mode
         batch_size = 64
-        # Assuming 'feature_dataset' is your Dataset object containing the feature vectors
-        # Assuming 'test_dataloader' is your DataLoader for the test dataset
         test_dataloader = DataLoader(cur_feature_dataset, batch_size=batch_size, shuffle=False)
 
         adatped_features = []
@@ -205,13 +187,11 @@ if __name__ == '__main__':
         print(adatped_features.size())
         feat_dict = dict()
         feat_dict['features'] = adatped_features.detach().cpu().tolist()
-        # output_dir = f'./bop23_obj_features/{dataset_folder}'
         output_dir = './adapted_obj_feats'
         os.makedirs(output_dir, exist_ok=True)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         json_filename = f'{adapter_args}.json'
-        # json_filename = f'{adapter_type}_bs1024_epoch_{epochs}_adapter_descriptors_pbr.json'
         with open(os.path.join(output_dir, json_filename), 'w') as f:
             json.dump(feat_dict, f)
         print(f"saving adapted features {os.path.join(output_dir, json_filename)}")

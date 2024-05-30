@@ -135,6 +135,7 @@ python adapter.py
 python demo_eval_gdino_FFA.py
 
 # dataset results
+# for high-resolution dataset
 python mini_test_eval_gdino_FFA.py
 # for lmo 
 python lmo_test_eval_gdino_FFA.py
@@ -147,6 +148,8 @@ python lmo_test_eval_gdino_FFA.py
 # evaluate them with eval_result.py
 ```
 We include the ground truth files and our predictions in this [link](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). You can run [eval_results.py](eval_results.py) to evaluate them. Ground truth filenames include "gt" or "test", while our prediction filenames include "coco_instances".
+
+Note: Uncomment this line [sel_roi['mask'] = mask](https://github.com/YoungSean/NIDS-Net/blob/main/utils/inference_utils.py#L181) if you need masks in the result.
 
 ## BOP Benchmark
 We have this [github repo](https://github.com/YoungSean/NIDS-Net-BOP) to generate the results for the BOP benchmark.

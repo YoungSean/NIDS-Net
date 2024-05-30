@@ -104,8 +104,8 @@ def get_args_parser(
 
 
 # In[8]:
-
-scene_level = 'hard'  # all / easy / hard
+# set the scene level here
+scene_level = 'all'  # all / easy / hard
 # Default args and initialize model
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 448
@@ -121,10 +121,10 @@ encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14_reg')
 encoder.to('cuda')
 encoder.eval()
 
-use_adapter = False
+use_adapter = True
 adapter_type = "weight"
 if use_adapter:
-    input_features = 1024 #768, 1024
+    input_features = 1024 #768, 1024, the vector dimension
     if adapter_type == "clip":
         # adapter_args = 'Ins_clip_ratio_0.6_temp_0.05_epoch_40_lr_0.0001_bs_1024_vec_reduction_4_L2e4_vitl_reg'
         adapter_args = 'Ins_0413__ratio_0.6_temp_0.05_epoch_40_lr_0.0001_bs_512_vec_reduction_4_L2e4_vitl_reg'
@@ -132,8 +132,6 @@ if use_adapter:
         adapter = ModifiedClipAdapter(input_features, reduction=4, ratio=0.6).to('cuda')
     elif adapter_type == "weight":
         adapter_args = 'Ins_weighted_10sigmoid_ratio_0.6_temp_0.05_epoch_40_lr_0.001_bs_1024_vec_reduction_4_L2e4_vitl_reg'
-        # adapter_args = "ins_obj_shuffle_weight_0430_temp_0.05_epoch_80_lr_0.001_bs_64_vec_reduction_4_L2e4_vitl_reg"
-        # adapter_args = "insDet_smallDinov2_weight_0509_temp_0.05_epoch_40_lr_0.001_bs_1024_vec_reduction_4"
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = WeightAdapter(input_features, reduction=4).to('cuda')
 
@@ -206,6 +204,7 @@ for image_path in tqdm(image_paths):
     accurate_bboxs, masks = get_bbox_masks_from_gdino_sam(image_path, gdino, SAM, visualize=False)
     mask = masks.cpu().numpy()
     accurate_bboxs = accurate_bboxs.cpu().numpy()
+    # set ratio = 0.25 since we are evaluating on the ground truth results of images with 1/4 resolution. Only set for the high-resolution dataset
     rois, sel_rois, cropped_imgs, cropped_masks = get_object_proposal(image_path, accurate_bboxs, masks, tag=tag, ratio=0.25, save_rois=False, output_dir=args.output_dir)
     scene_features = []
     num_imgs = len(cropped_imgs)

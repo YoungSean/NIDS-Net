@@ -89,7 +89,7 @@ Save and unzip them in '$ROOT/datasets' to get "datasets/RoboTools", "datasets/l
 
 
 ## Usage
-You can directly use the demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1Wam974xV82oq-uLbnWstsDSaoEpSWvP1?usp=sharing).
+You can directly use the demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1IM8TgpNo_9TijopO3PRyZea7MgTUjv30?usp=sharing).
 
 1. Check GroundingDINO and SAM
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)

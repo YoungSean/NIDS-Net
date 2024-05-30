@@ -3,6 +3,8 @@
 
 
 # In[6]:
+import os
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 import time
 import argparse
 import glob

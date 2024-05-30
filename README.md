@@ -86,14 +86,14 @@ Save and unzip them in '$ROOT/datasets' to get "datasets/RoboTools", "datasets/l
 You can directly use the demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1Wam974xV82oq-uLbnWstsDSaoEpSWvP1?usp=sharing).
 
 1. Check GroundingDINO and SAM
-- SAM: [`test_sam.py`](test_sam.py)
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)
 
-2. Generate template embeddings via get_object_features_via_FFA.py.
+2. Generate template embeddings via [get_object_features_via_FFA.py](get_object_features_via_FFA.py).
 Or you can download the [template embeddings and model weights](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files ending with "vitl_reg.json".
 
 You may adjust their filenames to load them in the python scripts.
 ```shell
+# download the initial template embeddings
 mkdir obj_FFA
 wget https://utdallas.box.com/shared/static/50a8q7i5hc33rovgyavoiw0utuduno39 -O obj_FFA/object_features_vitl14_reg.json
 
@@ -104,10 +104,10 @@ mkdir RoboTools_obj_feat
 wget https://utdallas.box.com/shared/static/e7o7fy00qitmbyg51wb6at9vc1igzupb -O RoboTools_obj_feat/object_features.json
 mkdir adapted_obj_feats
 ```
-3. Train weight adapters in adapter.py (Optional).
+3. Train weight adapters in [adapter.py](adapter.py) (Optional).
 You can start with the basic version without the weight adapter.
 
-To train the adapter, prepare the training dataset and set parameters in adapter.py. 
+To train the adapter, prepare the training dataset and set parameters in [adapter.py](adapter.py). 
 
 After training, use the adapter to fine-tune and save the template embeddings in './adapted_obj_feats'. The script adapter.py can inference the template embeddings with the trained adapter.
 
@@ -137,10 +137,10 @@ python lmo_test_eval_gdino_FFA.py
 ./get_ycbv_prediction.sh 
 ./get_RoboTools_prediction.sh 
 
-# then merge them using utils/merge_COCO_json.py
+# then merge them using utils/merge_COCO_json.py. You can download Ground truth files in the following link.
 # evaluate them with eval_result.py
 ```
-We include the ground truth file and our predictions in this [link](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). You can run eval_result.py to evaluate them. Ground truth filenames include "gt", while our predictions include "coco_instances".
+We include the ground truth files and our predictions in this [link](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). You can run [eval_results.py](eval_results.py) to evaluate them. Ground truth filenames include "gt" or "test", while our prediction filenames include "coco_instances".
 
 ## BOP Benchmark
 We have this [github repo](https://github.com/YoungSean/NIDS-Net-BOP) to generate the results for the BOP benchmark.

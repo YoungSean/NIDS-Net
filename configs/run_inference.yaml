@@ -1,0 +1,12 @@
+defaults:
+  - user: default
+  - machine: local
+  - callback: base
+  - data: bop
+  - model: cnos
+  # - model: cnos_fast
+  - _self_
+
+save_dir: ${machine.root_dir}/results/${name_exp}
+name_exp: NIDS_NET2_FFA_APPE_max_0530_BPR_224_exps_baseline
+dataset_name:

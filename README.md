@@ -21,6 +21,8 @@ A unified framework for Novel Instance Detection and Segmentation (NIDS).
 [Code for BOP Challenge](https://github.com/YoungSean/NIDS-Net-BOP).
 
 ![BOP Segmentation Leaderboard.](imgs/leaderboard.png)
+## Segmentation Example
+![BOP Segmentation Example.](imgs/seg_1.png)
 
 ## Getting Started
 We prepare demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1IM8TgpNo_9TijopO3PRyZea7MgTUjv30?usp=sharing). 
@@ -32,10 +34,14 @@ We prepare demo google colabs: [inference on a high-resolution image](https://co
 ### Installation
 ```sh
 git clone https://github.com/YoungSean/NIDS-Net.git
-pip install -r requirements.txt
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda env create -f environment.yml
+conda activate nids
+conda install pytorch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install xformers -c xformers
 python setup.py install
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+# for using SAM
+pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 #### Download [ViT-H SAM weights](https://github.com/facebookresearch/segment-anything#model-checkpoints)
 ```shell
@@ -151,10 +157,53 @@ We include the ground truth files and our predictions in this [link](https://utd
 
 Note: Uncomment this line [sel_roi['mask'] = mask](https://github.com/YoungSean/NIDS-Net/blob/main/utils/inference_utils.py#L181) if you need masks in the result.
 
-## BOP Benchmark
-We have this [github repo](https://github.com/YoungSean/NIDS-Net-BOP) to generate the results for the BOP benchmark.
+## BOP Challenge 2023
 
-Will merge the BOP repo into this repo soon.
+### Datasets
+
+Please follow [CNOS](https://github.com/nv-nguyen/cnos?tab=readme-ov-file#2-datasets-and-model-weights) to download the datasets.
+
+We mainly use the template images from BlenderProc4BOP set due to its better performance. The dataest is used to generate template embeddings. Please find the template embeddings in this [link](https://utdallas.box.com/s/yw8oazutnp1ektcnzh3hm8u5vjtq7to7). So you can use these template embeddings to train the adapter. 
+
+If you just need template embeddings for matching, you do **not** need to download the datasets for inference. **Only** testing datasets are needed.
+
+### Inference on [BOP datasets](https://bop.felk.cvut.cz/datasets/)
+
+Access NIDS-Net's prediction results, template embeddings and the adapter model weight for seven BOP benchmark datasets [here](https://utdallas.box.com/s/yw8oazutnp1ektcnzh3hm8u5vjtq7to7).
+
+Before running the inference, please download the template embeddings and adapter model weight from the link above. You may modify the [model weight path](https://github.com/YoungSean/NIDS-Net-BOP/blob/main/src/model/detector.py#L196) and [the adapted template embedding path](https://github.com/YoungSean/NIDS-Net-BOP/blob/main/src/model/detector.py#L220) in the model file.
+
+<details><summary>Click to expand</summary>
+
+1. Train the weight adapter.
+You may change the folder path in the following python scripts. These paths are pointing to initial instance template embeddings.
+```shell
+python obj_adapter.py
+# now you train a common adapter for all datasets
+# Then you can use the adapter to generate the adapter template embeddings for the BOP datasets
+# the following python script will generate the adapter template embeddings.
+python transforme_adapter_feats.py
+```
+
+2. Run NIDS-Net to get predictions of a BOP dataset:
+
+```
+export DATASET_NAME=lmo 
+# adding CUDA_VISIBLE_DEVICES=$GPU_IDS if you want to use a specific GPU
+
+# with Grounded-SAM + PBR
+python run_inference.py dataset_name=$DATASET_NAME
+
+```
+Once the script completes, NIDS-Net will generate a prediction file at this [directory](https://github.com/YoungSean/Novel-Instance-Detection-BOP/blob/840d10ea4954cf9e6e4a77f2a4c49ada005406b6/configs/run_inference.yaml#L10). You can then assess the prediction on the [BOP Challenge website](https://bop.felk.cvut.cz/).
+
+3. Prediction Visualization with Detectron2
+
+Display masks, object IDs, and scores using Detectron2.
+```
+python -m src.scripts.visualize_detectron2 dataset_name=$DATASET_NAME input_file=$INPUT_FILE output_dir=$OUTPUT_DIR
+```
+</details>
 
 ## Citation
 If you find the method useful in your research, please consider citing:
@@ -180,6 +229,7 @@ This project is based on the following repositories:
 - [SAM](https://github.com/facebookresearch/segment-anything)
 - [DINOv2](https://github.com/facebookresearch/dinov2)
 - [SAM6D](https://github.com/JiehongLin/SAM-6D)
-- [FFA](https://github.com/s-tian/CUTE) 
+- [FFA](https://github.com/s-tian/CUTE)
+- [CNOS](https://github.com/nv-nguyen/cnos)
 
 

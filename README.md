@@ -101,11 +101,11 @@ You can directly use the demo google colabs: [inference on a high-resolution ima
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)
 
 2. Generate template embeddings via [get_object_features_via_FFA.py](get_object_features_via_FFA.py).
-Or you can download the [template embeddings and model weights](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files ending with "vitl_reg.json".
+Or you can download the [template embeddings and model weights for detection datasets](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files ending with "vitl_reg.json".
 
 You may adjust their filenames to load them in the python scripts.
 ```shell
-# download the initial template embeddings
+# download the initial template embeddings of 4 detection datasets
 mkdir obj_FFA
 wget https://utdallas.box.com/shared/static/50a8q7i5hc33rovgyavoiw0utuduno39 -O obj_FFA/object_features_vitl14_reg.json
 
@@ -159,7 +159,7 @@ Note: Uncomment this line [sel_roi['mask'] = mask](https://github.com/YoungSean/
 
 ## BOP Challenge 2023
 
-### Datasets
+### Segmentation Datasets
 
 Please follow [CNOS](https://github.com/nv-nguyen/cnos?tab=readme-ov-file#2-datasets-and-model-weights) to download the datasets.
 
@@ -172,8 +172,6 @@ If you just need template embeddings for matching, you do **not** need to downlo
 Access NIDS-Net's prediction results, template embeddings and the adapter model weight for seven BOP benchmark datasets [here](https://utdallas.box.com/s/yw8oazutnp1ektcnzh3hm8u5vjtq7to7).
 
 Before running the inference, please download the template embeddings and adapter model weight from the link above. You may set [self.use_adapter](https://github.com/YoungSean/NIDS-Net/blob/main/src/model/detector.py#L187) to True and modify the [model weight path](https://github.com/YoungSean/NIDS-Net/blob/main/src/model/detector.py#L195) and [the adapted template embedding path](https://github.com/YoungSean/NIDS-Net/blob/main/src/model/detector.py#L220) in the model file.
-
-<details><summary>Click to expand</summary>
 
 1. Train the weight adapter.
 You may change the folder path in the following python scripts. These paths are pointing to initial instance template embeddings.
@@ -203,7 +201,7 @@ Display masks, object IDs, and scores using Detectron2.
 ```
 python -m src.scripts.visualize_detectron2 dataset_name=$DATASET_NAME input_file=$INPUT_FILE output_dir=$OUTPUT_DIR
 ```
-</details>
+
 
 ## Citation
 If you find the method useful in your research, please consider citing:

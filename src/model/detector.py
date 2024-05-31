@@ -215,7 +215,7 @@ class NIDSNET(pl.LightningModule):
             and not self.onboarding_config.reset_descriptors
         ):
             self.ref_data["descriptors"] = torch.load(descriptors_path).to(self.device) # if you want to use the original template embedding, uncomment here.
-
+            # uncomment the following lines if you want to use the adapter and the adapted template embedding.
             # adapter_descriptors_path = osp.join(self.ref_dataset.template_dir,
             #                                     f'{self.adapter_type}_obj_shuffle2_0501_bs32_epoch_500_adapter_descriptors_pbr.json')
             # with open(os.path.join(adapter_descriptors_path), 'r') as f:

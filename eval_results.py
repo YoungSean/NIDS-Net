@@ -13,8 +13,12 @@ from pycocotools.cocoeval import COCOeval
 # cocoDt = cocoGt.loadRes("datasets/ycbv/test/weight_adapted_samH_coco_instances_results_prediction_all.json")
 
 # test RoboTools
-cocoGt = COCO("datasets/RoboTools/test/scene_gt_coco_all_v2.json")
-cocoDt = cocoGt.loadRes("datasets/RoboTools/test/weight_adapter_80epoch_samH_coco_instances_results_prediction_all.json")
+# cocoGt = COCO("datasets/RoboTools/test/scene_gt_coco_all_v2.json")
+# cocoDt = cocoGt.loadRes("datasets/RoboTools/test/weight_adapter_80epoch_samH_coco_instances_results_prediction_all.json")
+
+# for High-resolution
+cocoGt = COCO("database/Data/test_4_all/instances_test_4_all.json")
+cocoDt = cocoGt.loadRes("exps/eval_0529_all_448_mask/coco_instances_results.json")
 cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
 # get IoU 0.95
 # cocoEval.params.iouThrs = [0.95]

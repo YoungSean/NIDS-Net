@@ -1,6 +1,5 @@
 LICENSE
 README.md
-pyproject.toml
 setup.py
 robokit/RoboKit.egg-info/PKG-INFO
 robokit/RoboKit.egg-info/SOURCES.txt

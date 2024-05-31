@@ -105,7 +105,7 @@ def get_args_parser(
 
 # In[8]:
 # set the scene level here
-scene_level = 'all'  # all / easy / hard
+scene_level = 'hard'  # all / easy / hard
 # Default args and initialize model
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 448

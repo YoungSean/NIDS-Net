@@ -1,5 +1,5 @@
 import os
-import clip
+#import clip
 import torch
 import logging
 import warnings

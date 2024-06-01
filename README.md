@@ -18,8 +18,6 @@ A unified framework for Novel Instance Detection and Segmentation (NIDS).
 ## BOP Leaderboard
 [Ranked #1: Model-based 2D segmentation of unseen objects – Core datasets](https://bop.felk.cvut.cz/leaderboards/segmentation-unseen-bop23/core-datasets/). 
 
-[Code for BOP Challenge](https://github.com/YoungSean/NIDS-Net-BOP).
-
 ![BOP Segmentation Leaderboard.](imgs/leaderboard.png)
 ## Segmentation Example
 ![BOP Segmentation Example.](imgs/seg_1.png)

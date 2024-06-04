@@ -1,6 +1,10 @@
 # NIDS-Net
 A unified framework for Novel Instance Detection and Segmentation (NIDS).
 
+The basic NIDS-Net **does not require any training**!  It works for one-shot or few-shot detection and segmentation tasks.
+
+Training the adapter is *simple and quick* because it's just a two-layer network. You can train the adapter in just a few minutes, even with hundreds of epochs!
+
 [arXiv](https://arxiv.org/abs/2405.17859), [Project](https://irvlutd.github.io/NIDSNet/)
 
 ## Adapting Pre-Trained Vision Models for Novel Instance Detection and Segmentation

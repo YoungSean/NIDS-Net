@@ -167,7 +167,7 @@ Please follow [CNOS](https://github.com/nv-nguyen/cnos?tab=readme-ov-file#2-data
 
 We mainly use the template images from BlenderProc4BOP set due to its better performance. The dataest is used to generate template embeddings. Please find the template embeddings in this [link](https://utdallas.box.com/s/yw8oazutnp1ektcnzh3hm8u5vjtq7to7). So you can use these template embeddings to train the adapter. 
 
-If you just need template embeddings for matching, you do **not** need to download the datasets for inference. **Only** testing datasets are needed.
+If you just need template embeddings for matching, you do **not** need to download the BlenderProc4BOP datasets for inference. **Only** testing datasets are needed. 
 
 ### Inference on [BOP datasets](https://bop.felk.cvut.cz/datasets/)
 

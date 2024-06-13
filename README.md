@@ -123,11 +123,11 @@ You can start with the basic version without the weight adapter.
 
 To train the adapter, prepare the training dataset and set parameters in [adapter.py](adapter.py). 
 
-After training, use the adapter to fine-tune and save the template embeddings in './adapted_obj_feats'. The script adapter.py can inference the template embeddings with the trained adapter.
+After training, use the adapter to refine the embeddings and store them in the folder '$ROOT/adapted_obj_feats'. The [adapter.py](adapter.py) script can fine-tune the template embeddings using the trained adapter.
 
-If you do not or forget to convert with adapter.py, then you can convert original to adapted template embeddings with 'utils/transform_adapted_feats.py', typically used for BOP datasets. 
+If you do not or forget to convert with adapter.py, you can convert original to adapted template embeddings with 'utils/transform_adapted_feats.py', typically used for BOP datasets. 
 
-To reuse the adapter during, enable "use_adapter" and specify the weight adapter weight path in the inference scripts.
+To reuse the adapter during inference, enable "use_adapter" and specify the weight adapter weight path in the inference scripts.
 
 Here's how to train the weight adapter for high-resolution data:
 ```shell
@@ -145,9 +145,9 @@ python demo_eval_gdino_FFA.py
 # dataset results
 # for high-resolution dataset
 python mini_test_eval_gdino_FFA.py
-# for lmo 
+# for lm-o dataset 
 python lmo_test_eval_gdino_FFA.py
-# since YCB-V and RoboTools have scenes
+# since YCB-V and RoboTools have many scenes
 # we first get detection prediction results for each scene
 ./get_ycbv_prediction.sh 
 ./get_RoboTools_prediction.sh 

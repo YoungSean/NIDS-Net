@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import torchvision
 from torchvision.transforms.functional import to_tensor
 from PIL import Image
 import numpy as np
@@ -14,6 +15,64 @@ from robokit.ObjDetection import GroundingDINOObjectPredictor, SegmentAnythingPr
 from scipy.optimize import linear_sum_assignment
 from src.model.utils import Detections
 import cv2
+
+
+def apply_nms_to_results(results, iou_threshold=0.5):
+    if len(results) == 0:
+        return results
+
+    boxes = torch.stack([result['bbox'] for result in results])
+    scores = torch.tensor([result['score'] for result in results])
+    category_ids = torch.tensor([result['category_id'] for result in results])
+
+    keep_ids = []
+    unique_category_ids = torch.unique(category_ids)
+
+    for category_id in unique_category_ids:
+        category_mask = category_ids == category_id
+        category_boxes = boxes[category_mask]
+        category_scores = scores[category_mask]
+        category_indices = torch.nonzero(category_mask, as_tuple=True)[0]
+
+        if len(category_boxes) > 0:
+            nms_indices = torchvision.ops.batched_nms(
+                category_boxes,
+                category_scores,
+                category_ids[category_mask],
+                iou_threshold
+            )
+            keep_ids.extend(category_indices[nms_indices].cpu().numpy().tolist())
+
+    keep_ids = torch.tensor(keep_ids, dtype=torch.long)
+    filtered_results = [results[i] for i in keep_ids]
+
+    return filtered_results
+
+def show_box(box, ax, color, label):
+    """ Show annotations on the image. Get this from segment anything repo."""
+    x0, y0 = box[0], box[1]
+    w, h = box[2] - box[0], box[3] - box[1]
+    ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor=color, facecolor=(0,0,0,0), lw=2))
+    ax.text(x0, y0, label, color=color, fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+
+def show_anns(anns):
+    """ Show annotations on the image. Get this from segment anything repo."""
+    if len(anns) == 0:
+        return
+    sorted_anns = sorted(anns, key=(lambda x: x['area']), reverse=True)
+    ax = plt.gca()
+    ax.set_autoscale_on(False)
+
+    img = np.ones((sorted_anns[0]['segmentation'].shape[0], sorted_anns[0]['segmentation'].shape[1], 4))
+    img[:,:,3] = 0
+    colors = []  # Store colors for each annotation
+    for ann in sorted_anns:
+        m = ann['segmentation'].to(torch.bool)
+        color_mask = np.concatenate([np.random.random(3), [0.35]])
+        img[m] = color_mask
+        colors.append(color_mask[:3])  # Store RGB part of the color
+    ax.imshow(img)
+    return colors
 
 
 class WeightAdapter(nn.Module):
@@ -170,7 +229,7 @@ class NIDS:
         return mask_tensor
 
 
-    def step(self, image_np):
+    def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.7, visualize = True):
         image_pil = Image.fromarray(image_np).convert("RGB")
         # image_pil.show()
         bboxes, phrases, gdino_conf = self.gdino.predict(image_pil, "objects")
@@ -195,75 +254,56 @@ class NIDS:
         sim_mat = sim_mat.view(len(scene_feature), num_object, num_example)
         sims, _ = torch.max(sim_mat, dim=2)  # choose max score over profile examples of each object instance
         max_ins_sim, initial_result = torch.max(sims, dim=1)
+        num_proposals = len(proposals['boxes'])
+        results = []
+        for i in range(num_proposals):
+            if float(max_ins_sim[i]) < THRESHOLD_OBJECT_SCORE:
+                continue
+            result = dict()
+            result['category_id'] = initial_result[i].item() + 1 # object ids start from 1
+            result['bbox'] = proposals['boxes'][i].cpu()
+            result['area'] = proposals["masks"][i].cpu().sum().item()
+            result['score'] = float(max_ins_sim[i])
+            result['image_height'] = image_np.shape[0]
+            result['image_width'] = image_np.shape[1]
+            result['segmentation'] = proposals["masks"][i].cpu()
+            results.append(result)
 
-        # build new segment info and masks!
-        # for mask, we need to add the background mask back since some foreground masks are removed
-        # then save these results to the result_saver
-        # Convert to costs
-        # Replace NaN values with zero
-        sims[torch.isnan(sims)] = 0
-        max_value = sims.max().item() + 1
-        cost_matrix = max_value - sims.cpu().numpy()
-
-        # Applying Hungarian algorithm to find minimum cost matches
-        row_ind, col_ind = linear_sum_assignment(cost_matrix)
-
-        # Filtering out matches below a certain similarity threshold
-        threshold = 0.5  # Define your threshold here
-        matches = [(row, col) for row, col in zip(row_ind, col_ind) if sims[row, col] >= threshold]
-        new_fg_mask = []
-        for row, col in matches:
-            new_fg_mask.append(masks[row] * (col + 1))
-        if len(new_fg_mask) == 0:
-            return torch.zeros([1, image_np.shape[0], image_np.shape[1]], device='cuda')
-        new_mask = torch.stack(new_fg_mask, dim=0)
-        new_mask = new_mask.squeeze(1) # remove the channel dimension -> [N, H ,W]
-        visualize = False
-        if visualize:
-            # Number of masks
-            num_masks = new_mask.shape[0]
-
-            # Set up the matplotlib figure and axes
-            fig, axes = plt.subplots(1, num_masks, figsize=(15, 5))  # Adjust figsize to your needs
-
-            # Plot each mask
-            for i in range(num_masks):
-                ax = axes[i] if num_masks > 1 else axes  # Handle the case of a single subplot
-                ax.imshow(new_mask[i].cpu(), cmap='gray')  # Use gray scale to visualize the mask
-                ax.axis('off')  # Turn off axis
-                ax.set_title(f'Mask {i + 1}')  # Title with mask number
-
-            # Display all the plots
-            plt.show()
-
-        foreground_masks = new_mask > 0.5
-        background_mask = get_background_mask(foreground_masks)
-        new_mask = torch.cat([background_mask.unsqueeze(0), new_mask], dim=0)
-
-        num_masks = new_mask.shape[0]
-
+        results = apply_nms_to_results(results, iou_threshold=0.5)
+        new_mask = results[0]['segmentation']
         # combine these masks to a single mask
         mask = torch.zeros([new_mask.shape[-2], new_mask.shape[-1]], device=new_mask.device)
-        for i in range(num_masks):
-            mask = torch.max(mask, new_mask[i])
-        unique_values = torch.unique(mask)
-        # print(unique_values)
-        visualize = True
+        for i in range(len(results)):
+            new_mask = results[i]['segmentation']
+            mask = torch.max(mask, new_mask*(results[i]['category_id']))
         if visualize:
-            # Number of masks
-            num_masks = 1
+            # Set up the matplotlib figure and axes with 3 subplots
+            fig, axes = plt.subplots(1, 3, figsize=(20, 20))  # Adjust figsize to your needs
 
-            # Set up the matplotlib figure and axes
-            fig, axes = plt.subplots(1, num_masks, figsize=(15, 5))  # Adjust figsize to your needs
+            # Plot the first image
+            ax = axes[0]
+            ax.imshow(image_np)
+            ax.axis('off')
+            ax.set_title('Image')
 
-            # Plot each mask
-            for i in range(num_masks):
-                ax = axes[i] if num_masks > 1 else axes  # Handle the case of a single subplot
-                ax.imshow(mask.cpu())  # Use gray scale to visualize the mask
-                ax.axis('off')  # Turn off axis
-                ax.set_title(f'Mask {i + 1}')  # Title with mask number
+            # Plot the mask
+            ax = axes[1]
+            ax.imshow(mask, cmap='viridis', vmin=0, vmax=mask.max().item())
+            ax.axis('off')  # Turn off axis
+            ax.set_title('Masks')  # Title with mask number
+
+            # Plot the second image with annotations
+            ax = axes[2]
+            ax.imshow(image_np)
+            colors = show_anns(results)  # Get colors used for masks
+            for ann, color in zip(results, colors):
+                show_box(ann['bbox'], ax, color=color, label=str(ann['category_id']))
+            ax.axis('off')
+            ax.set_title('Image with Annotations')
 
             # Display all the plots
+            plt.tight_layout()
             plt.show()
 
-        return new_mask
+
+        return results

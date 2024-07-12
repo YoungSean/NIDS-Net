@@ -36,6 +36,7 @@ We prepare demo google colabs: [inference on a high-resolution image](https://co
 ### Installation
 ```sh
 git clone https://github.com/YoungSean/NIDS-Net.git
+cd NIDS-Net
 conda env create -f environment.yml
 conda activate nids
 conda install pytorch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 pytorch-cuda=11.8 -c pytorch -c nvidia
@@ -44,6 +45,8 @@ python setup.py install
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # for using SAM
 pip install git+https://github.com/facebookresearch/segment-anything.git
+# Use old supervision. 
+pip install supervision==0.20.0 
 ```
 #### Download [ViT-H SAM weights](https://github.com/facebookresearch/segment-anything#model-checkpoints)
 ```shell

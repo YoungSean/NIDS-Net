@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import torch
 import torchvision
 from torchvision.transforms.functional import to_tensor
@@ -158,7 +159,7 @@ class NIDS:
         encoder.to('cuda')
         encoder.eval()
         self.encoder = encoder
-        self.gdino = GroundingDINOObjectPredictor(threshold=0.15)
+        self.gdino = GroundingDINOObjectPredictor(threshold=0.3)
         self.SAM = SegmentAnythingPredictor(vit_model="vit_h")
         self.descriptor_model = CustomDINOv2(encoder)
         self.template_features = template_features
@@ -229,7 +230,7 @@ class NIDS:
         return mask_tensor
 
 
-    def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.7, visualize = True):
+    def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.4, visualize = False):
         image_pil = Image.fromarray(image_np).convert("RGB")
         # image_pil.show()
         bboxes, phrases, gdino_conf = self.gdino.predict(image_pil, "objects")
@@ -306,4 +307,4 @@ class NIDS:
             plt.show()
 
 
-        return results
+        return results, mask

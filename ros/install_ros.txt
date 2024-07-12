@@ -1,0 +1,5 @@
+conda install -c conda-forge rospkg empy
+
+source /opt/ros/noetic/setup.bash 
+pip install easydict
+pip install transforms3d

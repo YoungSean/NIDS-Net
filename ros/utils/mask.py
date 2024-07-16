@@ -147,6 +147,86 @@ def visualize_segmentation(im, masks, nc=None, return_rgb=False, save_dir=None):
         return PIL_image
     
 
+def visualize_results(image, results, class_names, return_rgb=False, save_dir=None):
+    """
+    Visualize the detection results on the image.
+    
+    Parameters:
+    - image: The original RGB image as a NumPy array.
+    - results: A list of dictionaries containing detection results.
+    - class_names: A list of class names corresponding to the category IDs.
+    - return_rgb: If True, return the visualized image as a NumPy array.
+    - save_dir: If specified, save the visualized image to this directory.
+    """
+    image = image.copy()
+    masks = np.zeros((image.shape[0], image.shape[1]), dtype=int)
+
+    # Populate the mask array
+    for idx, result in enumerate(results):
+        masks[result['segmentation'].numpy().astype(bool)] = result['category_id']
+
+    # Visualize segmentation with colors
+    if not return_rgb:
+        fig, ax = plt.subplots()
+        ax.axis('off')
+        ax.imshow(image)
+
+    NUM_COLORS = masks.max() + 1
+    cm = plt.get_cmap('gist_rainbow')
+    colors = [cm(1. * i / NUM_COLORS) for i in range(NUM_COLORS)]
+    imgMask = np.zeros(image.shape)
+
+    # Draw color masks
+    for i in np.unique(masks):
+        if i == 0:  # Skip background
+            continue
+
+        color_mask = np.array(colors[i][:3])  # color in RGB
+        color_mask_bgr = (color_mask * 255).astype(int)[::-1]  # convert to BGR for OpenCV
+        e = (masks == i)
+
+        # Add to the mask
+        imgMask[e] = color_mask
+
+    # Add the mask to the image
+    imgMask = (imgMask * 255).round().astype(np.uint8)
+    image = cv2.addWeighted(image, 0.5, imgMask, 0.5, 0.0)
+
+    # Draw mask contours and bounding boxes
+    for result in results:
+        color_mask = np.array(colors[result['category_id']][:3])  # RGB for Matplotlib
+        color_mask_bgr = (color_mask * 255).astype(int)[::-1]  # BGR for OpenCV
+        mask = result['segmentation'].numpy().astype(bool)
+
+        # Find contours
+        contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Draw contours and bounding boxes
+        for contour in contours:
+            if save_dir is None and not return_rgb:
+                polygon = Polygon(contour.reshape((-1, 2)), fill=False, edgecolor=color_mask, linewidth=1.2, alpha=0.5)
+                ax.add_patch(polygon)
+            else:
+                cv2.drawContours(image, [contour], -1, color_mask_bgr.tolist(), 2)
+
+        # Draw bounding box from result['bbox']
+        x1, y1, x2, y2 = map(int, result['bbox'])
+        cv2.rectangle(image, (x1, y1), (x2, y2), color_mask_bgr.tolist(), 2)
+
+        # Add class label and score to the bounding box
+        label = f"{class_names[result['category_id']]}: {result['score']:.2f}"
+        cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_mask_bgr.tolist(), 2)
+
+    if save_dir is None and not return_rgb:
+        ax.imshow(image)
+        return fig
+    elif return_rgb:
+        return image
+    elif save_dir is not None:
+        # Save the image
+        PIL_image = Image.fromarray(image)
+        PIL_image.save(save_dir)
+        return PIL_image
 ### These two functions were adatped from the DAVIS public dataset ###
 
 def imread_indexed(filename):

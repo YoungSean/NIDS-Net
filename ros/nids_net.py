@@ -230,7 +230,7 @@ class NIDS:
         return mask_tensor
 
 
-    def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.4, visualize = False):
+    def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.60, visualize = False):
         image_pil = Image.fromarray(image_np).convert("RGB")
         # image_pil.show()
         bboxes, phrases, gdino_conf = self.gdino.predict(image_pil, "objects")
@@ -271,9 +271,11 @@ class NIDS:
             results.append(result)
 
         results = apply_nms_to_results(results, iou_threshold=0.5)
+        mask = torch.zeros([image_np.shape[0], image_np.shape[1]])
+        if len(results) == 0:
+            return results, mask
         new_mask = results[0]['segmentation']
         # combine these masks to a single mask
-        mask = torch.zeros([new_mask.shape[-2], new_mask.shape[-1]], device=new_mask.device)
         for i in range(len(results)):
             new_mask = results[i]['segmentation']
             mask = torch.max(mask, new_mask*(results[i]['category_id']))

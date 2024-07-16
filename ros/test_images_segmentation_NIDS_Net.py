@@ -4,7 +4,7 @@
 # This work is licensed under the NVIDIA Source Code License - Non-commercial. Full
 # text can be found in LICENSE.md
 
-"""Test UCN on ros images"""
+"""Test NIDS-Net on ros images"""
 
 import torch
 import torch.nn.parallel
@@ -31,9 +31,7 @@ import scipy.io
 from utils.blob import pad_im
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
-from fcn.config import cfg, cfg_from_file, get_output_dir
-from fcn.test_dataset import test_sample
-from utils.mask import visualize_segmentation
+from utils.mask import visualize_results
 lock = threading.Lock()
 
 from nids_net import NIDS
@@ -127,28 +125,12 @@ class ImageListener:
 
         print('===========================================')
 
-        # bgr image
-        im = im_color.astype(np.float32)
-        im_tensor = torch.from_numpy(im) / 255.0
-        pixel_mean = torch.tensor(cfg.PIXEL_MEANS / 255.0).float()
-        im_tensor -= pixel_mean
-        image_blob = im_tensor.permute(2, 0, 1)
-        sample = {'image_color': image_blob.unsqueeze(0)}
 
-        if cfg.INPUT == 'DEPTH' or cfg.INPUT == 'RGBD':
-            height = im_color.shape[0]
-            width = im_color.shape[1]
-            depth_img[np.isnan(depth_img)] = 0
-            xyz_img = compute_xyz(depth_img, self.fx, self.fy, self.px, self.py, height, width)
-            depth_blob = torch.from_numpy(xyz_img).permute(2, 0, 1)
-            sample['depth'] = depth_blob.unsqueeze(0)
-
-        # out_label, out_label_refined = test_sample(sample, self.network, self.network_crop)
         # input imaeg: RGB numpy array.
         im_rgb = cv2.cvtColor(im_color, cv2.COLOR_BGR2RGB)
         results, mask = self.model.step(im_rgb)
-        print(results)
-        print("all masks: ", mask)
+        #print(results)
+        #print("all masks: ", mask)
 
         # publish segmentation mask
         # label = out_label[0].cpu().numpy()
@@ -162,29 +144,20 @@ class ImageListener:
         num_object = len(np.unique(label)) - 1
         print('%d objects' % (num_object))
 
-        # if out_label_refined is not None:
-        #     label_refined = out_label_refined[0].cpu().numpy()
-        #     label_msg_refined = self.cv_bridge.cv2_to_imgmsg(label_refined.astype(np.uint8))
-        #     label_msg_refined.header.stamp = rgb_frame_stamp
-        #     label_msg_refined.header.frame_id = rgb_frame_id
-        #     label_msg_refined.encoding = 'mono8'
-        #     self.label_refined_pub.publish(label_msg_refined)
-
         # publish segmentation images
-        im_label = visualize_segmentation(im_color[:, :, (2, 1, 0)], label, return_rgb=True)
+        class_names = ["background", "002_master_chef_can", "003_cracker_box", "004_sugar_box", 
+        "005_tomato_soup_can", "006_mustard_bottle", "007_tuna_fish_can", "008_pudding_box", "009_gelatin_box",
+         "010_potted_meat_can", "011_banana", "019_pitcher_base", "021_bleach_cleanser", 
+         "024_bowl", "025_mug", "035_power_drill", "036_wood_block", "037_scissors", 
+         "040_large_marker", "051_large_clamp","052_extra_large_clamp","061_foam_brick"]
+        im_label = visualize_results(im_color, results, class_names, return_rgb=True)
         rgb_msg = ros_numpy.msgify(Image, im_label, 'rgb8')
         rgb_msg.header.stamp = rgb_frame_stamp
         rgb_msg.header.frame_id = rgb_frame_id
         self.image_pub.publish(rgb_msg)
-
-        # if out_label_refined is not None:
-        #     im_label_refined = visualize_segmentation(im_color[:, :, (2, 1, 0)], label_refined, return_rgb=True)
-        #     rgb_msg_refined = self.cv_bridge.cv2_to_imgmsg(im_label_refined, 'rgb8')
-        #     rgb_msg_refined.header.stamp = rgb_frame_stamp
-        #     rgb_msg_refined.header.frame_id = rgb_frame_id
-        #     self.image_refined_pub.publish(rgb_msg_refined)
             
         # save results
+        # to do. need to modify the following code
         save_result = False
         if save_result:
             # result = {'rgb': im_color, 'labels': label, 'labels_refined': label_refined}
@@ -209,32 +182,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Test a NIDS-Net network')
     parser.add_argument('--gpu', dest='gpu_id', help='GPU id to use',
                         default=0, type=int)
-    # parser.add_argument('--instance', dest='instance_id', help='PoseCNN instance id to use',
-    #                     default=0, type=int)
-    # parser.add_argument('--pretrained', dest='pretrained',
-    #                     help='initialize with pretrained checkpoint',
-    #                     default=None, type=str)
-    # parser.add_argument('--pretrained_crop', dest='pretrained_crop',
-    #                     help='initialize with pretrained checkpoint for crops',
-    #                     default=None, type=str)
-    # parser.add_argument('--cfg', dest='cfg_file',
-    #                     help='optional config file', default=None, type=str)
-    # parser.add_argument('--dataset', dest='dataset_name',
-    #                     help='dataset to train on',
-    #                     default='shapenet_scene_train', type=str)
-    # parser.add_argument('--rand', dest='randomize',
-    #                     help='randomize (do not use a fixed seed)',
-    #                     action='store_true')
-    # parser.add_argument('--network', dest='network_name',
-    #                     help='name of the network',
-    #                     default=None, type=str)
-    # parser.add_argument('--background', dest='background_name',
-    #                     help='name of the background file',
-    #                     default=None, type=str)
-
-    # if len(sys.argv) == 1:
-    #     parser.print_help()
-    #     sys.exit(1)
+    
 
     args = parser.parse_args()
     return args
@@ -246,34 +194,8 @@ if __name__ == '__main__':
     print('Called with args:')
     print(args)
 
-    # if args.cfg_file is not None:
-    #     cfg_from_file(args.cfg_file)
 
-    print('Using config:')
-    pprint.pprint(cfg)
-
-    # if not args.randomize:
-    #     # fix the random seeds (numpy and caffe) for reproducibility
-    #     np.random.seed(cfg.RNG_SEED)
-
-    # device
-    # cfg.gpu_id = 0
-    # cfg.device = torch.device('cuda:{:d}'.format(cfg.gpu_id))
-    # cfg.instance_id = args.instance_id
-    # num_classes = 2
-    # cfg.MODE = 'TEST'
-    # cfg.TEST.VISUALIZE = False
-    # print('GPU device {:d}'.format(args.gpu_id))
-
-    # prepare network
-    # if args.pretrained:
-    #     network_data = torch.load(args.pretrained)
-    #     print("=> using pre-trained network '{}'".format(args.pretrained))
-    # else:
-    #     network_data = None
-    #     print("no pretrained network specified")
-    #     sys.exit()
-
+    
     adapter_descriptors_path = "ros/weight_obj_shuffle2_0501_bs32_epoch_500_adapter_descriptors_pbr.json"
     with open(os.path.join(adapter_descriptors_path), 'r') as f:
         feat_dict = json.load(f)
@@ -286,6 +208,5 @@ if __name__ == '__main__':
 
     # image listener
     listener = ImageListener(model)
-    print("is it good?")
     while not rospy.is_shutdown():
        listener.run_network()

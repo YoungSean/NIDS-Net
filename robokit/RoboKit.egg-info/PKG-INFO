@@ -23,7 +23,11 @@ Requires-Dist: absl-py
 # NIDS-Net
 A unified framework for Novel Instance Detection and Segmentation (NIDS).
 
-[arXiv](https://arxiv.org/abs/2405.17859), [Project](https://irvlutd.github.io/NIDSNet/), [Code for BOP Challenge](https://github.com/YoungSean/NIDS-Net-BOP)
+The basic NIDS-Net **does not require any training** since it does not involve adapters!  It works for one-shot or few-shot detection and segmentation tasks.
+
+Training the adapter is *simple and quick* because it's just a two-layer network. You can train the adapter in just a few minutes, even with hundreds of epochs!
+
+[arXiv](https://arxiv.org/abs/2405.17859), [Project](https://irvlutd.github.io/NIDSNet/)
 
 ## Adapting Pre-Trained Vision Models for Novel Instance Detection and Segmentation
 > Novel Instance Detection and Segmentation (NIDS) aims at detecting and segmenting novel object instances given a few examples of each instance. We propose a unified framework (NIDS-Net) comprising object proposal generation, embedding creation for both instance templates and proposal regions, and embedding matching for instance label assignment. Leveraging recent advancements in large vision methods, we utilize the Grounding DINO and Segment Anything Model (SAM) to obtain object proposals with accurate bounding boxes and masks. Central to our approach is the generation of high-quality instance embeddings. We utilize foreground feature averages of patch embeddings from the DINOv2 ViT backbone, followed by refinement through a weight adapter mechanism that we introduce. We show experimentally that our weight adapter can adjust the embeddings locally within their feature space and effectively limit overfitting. This methodology enables a straightforward matching strategy, resulting in significant performance gains. Our framework surpasses current state-of-the-art methods, demonstrating notable improvements of 22.3, 46.2, 10.3, and 24.0 in average precision (AP) across four detection datasets. In instance segmentation tasks on seven core datasets of the BOP challenge, our method outperforms the top RGB methods by 3.6 AP and remains competitive with the best RGB-D method.
@@ -40,9 +44,9 @@ A unified framework for Novel Instance Detection and Segmentation (NIDS).
 ## BOP Leaderboard
 [Ranked #1: Model-based 2D segmentation of unseen objects – Core datasets](https://bop.felk.cvut.cz/leaderboards/segmentation-unseen-bop23/core-datasets/). 
 
-[Code for BOP Challenge](https://github.com/YoungSean/NIDS-Net-BOP).
-
 ![BOP Segmentation Leaderboard.](imgs/leaderboard.png)
+## Segmentation Example
+![BOP Segmentation Example.](imgs/seg_1.png)
 
 ## Getting Started
 We prepare demo google colabs: [inference on a high-resolution image](https://colab.research.google.com/drive/1dtlucQ5QryLgooSDkH-Qumxrrnb-9FCg?usp=sharing) and [Training free one-shot detection](https://colab.research.google.com/drive/1IM8TgpNo_9TijopO3PRyZea7MgTUjv30?usp=sharing). 
@@ -60,6 +64,8 @@ conda install pytorch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 pytorch-cuda=
 conda install xformers -c xformers
 python setup.py install
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+# for using SAM
+pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 #### Download [ViT-H SAM weights](https://github.com/facebookresearch/segment-anything#model-checkpoints)
 ```shell
@@ -119,11 +125,11 @@ You can directly use the demo google colabs: [inference on a high-resolution ima
 - GroundingDINO + SAM: [`test_gdino_sam.py`](test_gdino_sam.py)
 
 2. Generate template embeddings via [get_object_features_via_FFA.py](get_object_features_via_FFA.py).
-Or you can download the [template embeddings and model weights](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files ending with "vitl_reg.json".
+Or you can download the [template embeddings and model weights for detection datasets](https://utdallas.box.com/s/ieo7lochg1dzzdjfqm7saiudaeptufoi). The initial embedding file name includes "object_features". Model weights use the "pth" suffix. Adapted embeddings are saved as JSON files ending with "vitl_reg.json".
 
 You may adjust their filenames to load them in the python scripts.
 ```shell
-# download the initial template embeddings
+# download the initial template embeddings of 4 detection datasets
 mkdir obj_FFA
 wget https://utdallas.box.com/shared/static/50a8q7i5hc33rovgyavoiw0utuduno39 -O obj_FFA/object_features_vitl14_reg.json
 
@@ -175,10 +181,51 @@ We include the ground truth files and our predictions in this [link](https://utd
 
 Note: Uncomment this line [sel_roi['mask'] = mask](https://github.com/YoungSean/NIDS-Net/blob/main/utils/inference_utils.py#L181) if you need masks in the result.
 
-## BOP Benchmark
-We have this [github repo](https://github.com/YoungSean/NIDS-Net-BOP) to generate the results for the BOP benchmark.
+## BOP Challenge 2023
 
-Will merge the BOP repo into this repo soon.
+### Segmentation Datasets
+
+Please follow [CNOS](https://github.com/nv-nguyen/cnos?tab=readme-ov-file#2-datasets-and-model-weights) to download the datasets. Our code is based on [CNOS](https://github.com/nv-nguyen/cnos) and [SAM6D](https://github.com/JiehongLin/SAM-6D).
+
+We mainly use the template images from BlenderProc4BOP set due to its better performance. The dataest is used to generate template embeddings. Please find the template embeddings in this [link](https://utdallas.box.com/s/yw8oazutnp1ektcnzh3hm8u5vjtq7to7). So you can use these template embeddings to train the adapter. 
+
+If you just need template embeddings for matching, you do **not** need to download the datasets for inference. **Only** testing datasets are needed.
+
+### Inference on [BOP datasets](https://bop.felk.cvut.cz/datasets/)
+
+Access NIDS-Net's prediction results, template embeddings and the adapter model weight for seven BOP benchmark datasets [here](https://utdallas.box.com/s/yw8oazutnp1ektcnzh3hm8u5vjtq7to7).
+
+Before running the inference, please download the template embeddings and adapter model weight from the link above. You may set [self.use_adapter](https://github.com/YoungSean/NIDS-Net/blob/main/src/model/detector.py#L187) to True and modify the [model weight path](https://github.com/YoungSean/NIDS-Net/blob/main/src/model/detector.py#L195) and [the adapted template embedding path](https://github.com/YoungSean/NIDS-Net/blob/main/src/model/detector.py#L220) in the model file.
+
+1. Train the weight adapter.
+You may change the folder path in the following python scripts. These paths are pointing to initial instance template embeddings.
+```shell
+python obj_adapter.py
+# now you train a common adapter for all datasets
+# Then you can use the adapter to generate the adapter template embeddings for the BOP datasets
+# the following python script will generate the adapter template embeddings.
+python transforme_adapter_feats.py
+```
+
+2. Run NIDS-Net to get predictions of a BOP dataset:
+
+```
+export DATASET_NAME=lmo 
+# adding CUDA_VISIBLE_DEVICES=$GPU_IDS if you want to use a specific GPU
+
+# with Grounded-SAM + PBR
+python run_inference.py dataset_name=$DATASET_NAME
+
+```
+Once the script completes, NIDS-Net will generate a prediction file at this [directory](https://github.com/YoungSean/Novel-Instance-Detection-BOP/blob/840d10ea4954cf9e6e4a77f2a4c49ada005406b6/configs/run_inference.yaml#L10). You can then assess the prediction on the [BOP Challenge website](https://bop.felk.cvut.cz/).
+
+3. Prediction Visualization with Detectron2
+
+Display masks, object IDs, and scores using Detectron2.
+```
+python -m src.scripts.visualize_detectron2 dataset_name=$DATASET_NAME input_file=$INPUT_FILE output_dir=$OUTPUT_DIR
+```
+
 
 ## Citation
 If you find the method useful in your research, please consider citing:
@@ -204,6 +251,7 @@ This project is based on the following repositories:
 - [SAM](https://github.com/facebookresearch/segment-anything)
 - [DINOv2](https://github.com/facebookresearch/dinov2)
 - [SAM6D](https://github.com/JiehongLin/SAM-6D)
-- [FFA](https://github.com/s-tian/CUTE) 
+- [FFA](https://github.com/s-tian/CUTE)
+- [CNOS](https://github.com/nv-nguyen/cnos)
 
 

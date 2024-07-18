@@ -147,6 +147,7 @@ class WeightAdapter(nn.Module):
 
         return x
 
+
 class NIDSNET(pl.LightningModule):
     def __init__(
         self,

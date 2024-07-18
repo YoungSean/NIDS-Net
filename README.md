@@ -34,6 +34,7 @@ We prepare demo google colabs: [inference on a high-resolution image](https://co
 - torchvision
 
 ### Installation
+We test the code on Ubuntu 20.04.
 ```sh
 git clone https://github.com/YoungSean/NIDS-Net.git
 cd NIDS-Net
@@ -41,6 +42,8 @@ conda env create -f environment.yml
 conda activate nids
 conda install pytorch==2.2.1 torchvision==0.17.1 torchaudio==2.2.1 pytorch-cuda=11.8 -c pytorch -c nvidia
 conda install xformers -c xformers
+# Assume you have set up the global git email and user name in your git config
+# if not, there may be an error when installing the following script
 python setup.py install
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # for using SAM
@@ -207,7 +210,7 @@ Display masks, object IDs, and scores using Detectron2.
 python -m src.scripts.visualize_detectron2 dataset_name=$DATASET_NAME input_file=$INPUT_FILE output_dir=$OUTPUT_DIR
 ```
 
-## ROS demo
+## Real-World Robot Experiment
 We test our NIDS-Net on YCBV objects using ROS with a Fetch robot. We use 
 1. template embeddings of synthetic images from CNOS: "ros/weight_obj_shuffle2_0501_bs32_epoch_500_adapter_descriptors_pbr.json"
 2. The adapter weight: "ros/bop_obj_shuffle_weight_0430_temp_0.05_epoch_500_lr_0.001_bs_32_weights.pth" 

@@ -207,6 +207,33 @@ Display masks, object IDs, and scores using Detectron2.
 python -m src.scripts.visualize_detectron2 dataset_name=$DATASET_NAME input_file=$INPUT_FILE output_dir=$OUTPUT_DIR
 ```
 
+## ROS demo
+We test our NIDS-Net on YCBV objects using ROS with a Fetch robot. We use 
+1. template embeddings of synthetic images from CNOS: "ros/weight_obj_shuffle2_0501_bs32_epoch_500_adapter_descriptors_pbr.json"
+2. The adapter weight: "ros/bop_obj_shuffle_weight_0430_temp_0.05_epoch_500_lr_0.001_bs_32_weights.pth" 
+
+<video width="600" controls>
+  <source src="imgs/ycbv_demo.mp4" type="video/mp4">
+</video>
+
+### Installation
+```shell
+# add some packages for ROS
+# Assume you are using ROS Noetic
+conda install -c conda-forge rospkg empy
+source /opt/ros/noetic/setup.bash 
+pip install easydict
+pip install transforms3d
+
+# test NIDS-Net on a YCBV image
+python ros/test_ycb_sample.py
+# use the ROS node to test NIDS-Net on YCBV objects
+cd ros
+# Assume you are using GPU:0.
+# This node is publishing the detection results for YCBV objects.
+python test_images_segmentation_NIDS_Net.py
+```
+
 
 ## Citation
 If you find the method useful in your research, please consider citing:

@@ -1,5 +1,4 @@
 import os
-#import clip
 import torch
 import logging
 import warnings
@@ -252,72 +251,3 @@ class SegmentAnythingPredictor(ObjectPredictor):
             return None, None
 
 
-class ZeroShotClipPredictor(Logger):
-    def __init__(self):
-        super().__init__()
-
-        # Load the CLIP model
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model, self.preprocess = clip.load('ViT-L/14@336px', self.device)
-
-    def get_features(self, images, text_prompts):
-        """
-        Extract features from a list of images and text prompts.
-
-        Parameters:
-        - images (list of PIL.Image): A list of PIL.Image representing images.
-        - text_prompts (list of str): List of text prompts.
-
-        Returns:
-        - Tuple of numpy.ndarray: Concatenated image features and text features as numpy arrays.
-
-        Raises:
-        - ValueError: If images is not a tensor or a list of tensors.
-        - RuntimeError: If an error occurs during feature extraction.
-        """
-        try:
-
-            with torch.no_grad():
-                text_inputs = torch.cat([clip.tokenize(prompt) for prompt in text_prompts]).to(self.device)
-                _images = torch.stack([self.preprocess(img) for img in images]).to(self.device)
-                img_features = self.model.encode_image(_images)
-                text_features = self.model.encode_text(text_inputs)
-            
-            return img_features, text_features
-
-        except ValueError as ve:
-            self.logger.error(f"ValueError in get_image_features: {ve}")
-            raise ve
-        except RuntimeError as re:
-            self.logger.error(f"RuntimeError in get_image_features: {re}")
-            raise re
-
-    def predict(self, image_array, text_prompts):
-        """
-        Run zero-shot prediction using CLIP model.
-
-        Parameters:
-        - image_array (List[torch.tensor]): List of tensor images.
-        - text_prompts (list): List of text prompts for prediction.
-
-        Returns:
-        - Tuple: Tuple containing prediction confidence and indices.
-        """
-        try:
-            # Perform prediction
-            image_features, text_features = self.get_features(image_array, text_prompts)
-
-            # Normalize features
-            image_features /= image_features.norm(dim=-1, keepdim=True)
-            text_features /= text_features.norm(dim=-1, keepdim=True)
-
-            # Calculate similarity
-            similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
-            pconf, indices = similarity.topk(1)
-
-            return (pconf.flatten(), indices.flatten())
-
-        except Exception as e:
-            # Log error and raise exception
-            self.logger.error(f"Error during prediction: {e}")
-            raise e

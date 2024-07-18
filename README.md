@@ -212,8 +212,7 @@ We test our NIDS-Net on YCBV objects using ROS with a Fetch robot. We use
 1. template embeddings of synthetic images from CNOS: "ros/weight_obj_shuffle2_0501_bs32_epoch_500_adapter_descriptors_pbr.json"
 2. The adapter weight: "ros/bop_obj_shuffle_weight_0430_temp_0.05_epoch_500_lr_0.001_bs_32_weights.pth" 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/j_5iODSkEsA?si=d6dy7tIYB85SDO-5" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
+[![Watch the video](https://img.youtube.com/vi/j_5iODSkEsA/hqdefault.jpg)](https://youtu.be/j_5iODSkEsA)
 ### Installation
 ```shell
 # add some packages for ROS

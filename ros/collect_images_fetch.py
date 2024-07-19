@@ -23,6 +23,7 @@ import scipy.io
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 from tf.transformations import quaternion_from_euler, quaternion_matrix
+import ros_numpy
 
 class ImageListener:
 
@@ -92,10 +93,10 @@ class ImageListener:
 
     def callback(self, rgb, depth):
         if depth.encoding == '32FC1':
-            depth_32 = self.cv_bridge.imgmsg_to_cv2(depth) * 1000
-            depth_cv = np.array(depth_32, dtype=np.uint16)
+            depth_cv = ros_numpy.numpify(depth)
         elif depth.encoding == '16UC1':
-            depth_cv = self.cv_bridge.imgmsg_to_cv2(depth)
+            depth_cv = ros_numpy.numpify(depth).copy().astype(np.float32)
+            depth_cv /= 1000.0
         else:
             rospy.logerr_throttle(
                 1, 'Unsupported depth type. Expected 16UC1 or 32FC1, got {}'.format(
@@ -103,9 +104,12 @@ class ImageListener:
             return
 
         # write images
-        im = self.cv_bridge.imgmsg_to_cv2(rgb, 'bgr8')
+        # im = self.cv_bridge.imgmsg_to_cv2(rgb, 'bgr8')
+        im = ros_numpy.numpify(rgb)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         filename_color = self.save_dir + 'color-%06d.jpg' % self.count
         filename_depth = self.save_dir + 'depth-%06d.png' % self.count
+        input('start capturing the object?')
         if self.count % 1 == 0:
             cv2.imwrite(filename_color, im)
             cv2.imwrite(filename_depth, depth_cv)

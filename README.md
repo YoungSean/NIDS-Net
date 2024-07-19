@@ -226,16 +226,19 @@ Click the following image ro this [YouTube link](https://youtu.be/4ZrZIOaH6-I?si
 # Assume you are using ROS Noetic
 conda install -c conda-forge rospkg empy
 source /opt/ros/noetic/setup.bash 
+pip install rosnumpy
 pip install easydict
 pip install transforms3d
 
 # test NIDS-Net on a YCBV image
 python ros/test_ycb_sample.py
 # use the ROS node to test NIDS-Net on YCBV objects
-cd ros
 # Assume you are using GPU:0.
 # This node is publishing the detection results for YCBV objects.
-python test_images_segmentation_NIDS_Net.py
+python ros/test_images_segmentation_NIDS_Net.py
+# for visualization
+cd ros
+rosrun rviz rviz -d segmentation.rviz 
 ```
 
 

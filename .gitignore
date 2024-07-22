@@ -6,7 +6,7 @@ hf_gdino.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -29,6 +29,7 @@ var/
 wheels/
 share/python-wheels/
 *.egg-info/
+**/*.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
@@ -168,4 +169,5 @@ cython_debug/
 #.idea/
 /exps/
 /dinov2/
+/robokit/RoboKit.egg-info/
 /robokit/RoboKit.egg-info/

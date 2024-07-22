@@ -49,12 +49,15 @@ def apply_nms_to_results(results, iou_threshold=0.5):
 
     return filtered_results
 
-def show_box(box, ax, color, label):
+def show_box(box, ax, color, label, confidence_score):
     """ Show annotations on the image. Get this from segment anything repo."""
     x0, y0 = box[0], box[1]
     w, h = box[2] - box[0], box[3] - box[1]
     ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor=color, facecolor=(0,0,0,0), lw=2))
-    ax.text(x0, y0, label, color=color, fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+    # ax.text(x0, y0, label, color=color, fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+    label_with_score = f"{label}: {confidence_score:.2f}"
+    ax.text(x0, y0, label_with_score, color=color, fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+
 
 def show_anns(anns):
     """ Show annotations on the image. Get this from segment anything repo."""
@@ -154,18 +157,22 @@ def get_background_mask(foreground_masks):
 
 class NIDS:
 
-    def __init__(self, template_features, use_adapter=False, adapter_path=None):
+    def __init__(self, template_features, use_adapter=False, adapter_path=None, gdino_threshold=0.3, sam_model="vit_h"):
         encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14')
         encoder.to('cuda')
         encoder.eval()
         self.encoder = encoder
-        self.gdino = GroundingDINOObjectPredictor(threshold=0.3)
-        self.SAM = SegmentAnythingPredictor(vit_model="vit_h")
+        self.gdino = GroundingDINOObjectPredictor(threshold=gdino_threshold)
+        self.SAM = SegmentAnythingPredictor(vit_model=sam_model)
         self.descriptor_model = CustomDINOv2(encoder)
-        self.template_features = template_features
+        # set up the template features for the object instances
+        # the shape of the template features is [num_objects, num_examples, feature_dim]
+        # To compute the cosine similarity between the template features and the scene features, we need to normalize the features
+        self.template_features = nn.functional.normalize(template_features, dim=-1, p=2)
         assert self.template_features is not None, "Template features are not provided!"
         self.num_examples = self.template_features.shape[1]
         self.num_objects = self.template_features.shape[0]
+
         self.object_ids = [] # object ids start from 0
         self.use_adapter = use_adapter
         if self.use_adapter:
@@ -231,6 +238,7 @@ class NIDS:
 
 
     def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.60, visualize = False):
+        print("the shape of template features is: ", self.template_features.shape)
         image_pil = Image.fromarray(image_np).convert("RGB")
         # image_pil.show()
         bboxes, phrases, gdino_conf = self.gdino.predict(image_pil, "objects")
@@ -300,7 +308,7 @@ class NIDS:
             ax.imshow(image_np)
             colors = show_anns(results)  # Get colors used for masks
             for ann, color in zip(results, colors):
-                show_box(ann['bbox'], ax, color=color, label=str(ann['category_id']))
+                show_box(ann['bbox'], ax, color=color, label=str(ann['category_id']), confidence_score=ann['score'])
             ax.axis('off')
             ax.set_title('Image with Annotations')
 
@@ -310,3 +318,34 @@ class NIDS:
 
 
         return results, mask
+
+
+    def get_template_feature_per_image(self, template_image_pil):
+        """
+        Get template features from the template image of one object. This function can be used for one-shot detection.
+        Parameters
+        ----------
+        template_image_pil: RGB PIL image
+        mask: a torch tensor, [H,W] with unique values for each object
+        -------
+        """
+        image_pil = template_image_pil.convert("RGB")
+        image_np = np.array(image_pil)
+        # image_pil.show()
+        bboxes, phrases, gdino_conf = self.gdino.predict(image_pil, "objects")
+        w, h = image_pil.size  # Get image width and height
+        # Scale bounding boxes to match the original image size
+        image_pil_bboxes = self.gdino.bbox_to_scaled_xyxy(bboxes, w, h)
+        image_pil_bboxes, masks = self.SAM.predict(image_pil, image_pil_bboxes)
+        proposals = dict()
+        proposals["masks"] = masks.squeeze(1).to(
+            torch.float32)  # to N x H x W, torch.float32 type as the output of fastSAM
+        proposals["boxes"] = image_pil_bboxes
+        assert len(proposals['boxes']) == 1, "Only one object is allowed in the template image"
+        query_FFA_decriptors, query_appe_descriptors, query_cls_descriptors = self.descriptor_model(image_np, proposals)
+        query_decriptors = torch.unsqueeze(query_FFA_decriptors, 0)
+        self.template_features = nn.functional.normalize(query_decriptors, dim=-1, p=2)
+        self.num_objects = 1
+        self.num_examples = 1
+        # note: it is not normalized
+        return query_decriptors

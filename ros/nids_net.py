@@ -343,7 +343,11 @@ class NIDS:
         proposals["boxes"] = image_pil_bboxes
         assert len(proposals['boxes']) == 1, "Only one object is allowed in the template image"
         query_FFA_decriptors, query_appe_descriptors, query_cls_descriptors = self.descriptor_model(image_np, proposals)
-        query_decriptors = torch.unsqueeze(query_FFA_decriptors, 0)
+        query_decriptors = query_FFA_decriptors
+        if self.use_adapter:
+            with torch.no_grad():
+                query_decriptors = self.adapter(query_decriptors)
+        query_decriptors = torch.unsqueeze(query_decriptors, 0)
         self.template_features = nn.functional.normalize(query_decriptors, dim=-1, p=2)
         self.num_objects = 1
         self.num_examples = 1

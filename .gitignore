@@ -5,6 +5,7 @@ imgs_dev/
 hf_gdino.py
 
 # Byte-compiled / optimized / DLL files
+__pycache__/
 *__pycache__/
 *.py[cod]
 *$py.class
@@ -167,3 +168,4 @@ cython_debug/
 #.idea/
 /exps/
 /dinov2/
+/robokit/RoboKit.egg-info/

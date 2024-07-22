@@ -12,7 +12,7 @@ def main(argv):
 
     try:
         logging.info("Initialize object detectors")
-        gdino = GroundingDINOObjectPredictor()
+        gdino = GroundingDINOObjectPredictor(threshold=0.5)
         SAM = SegmentAnythingPredictor()
 
         logging.info("Open the image and convert to RGB format")
@@ -45,3 +45,4 @@ if __name__ == "__main__":
     # app.run(main, ['imgs/color-000078.png'])
     # app.run(main, ['imgs/color-000019.png'])
     app.run(main, ['imgs/clutter-test.png'])
+    #app.run(main, ["/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000007.jpg"])

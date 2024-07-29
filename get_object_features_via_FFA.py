@@ -45,6 +45,43 @@ encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14_reg') #
 encoder.to('cuda')
 encoder.eval()
 
+def get_FFA_feature(img_path, encoder, img_size=448):
+    """used for a pair of rgb and mask images"""
+    mask_path = img_path.replace('images', 'masks').replace('.jpg', '.png')
+    mask = Image.open(mask_path)
+    mask = mask.convert('L')
+
+    with open(img_path, 'rb') as f:
+        img = Image.open(f)
+        img = img.convert('RGB')
+
+    w, h = img.size
+
+    if (img_size is not None) and (min(w, h) > img_size):
+        img.thumbnail((img_size, img_size), Image.LANCZOS)
+        mask.thumbnail((img_size, img_size), Image.BILINEAR)
+
+        # mask.show()
+    else:
+        new_w = math.ceil(w / 14) * 14
+        new_h = math.ceil(h / 14) * 14
+        img = img.resize((new_w, new_h), Image.LANCZOS)
+    # mask = mask.resize((16 , 16), Image.BILINEAR)
+    img.show()
+    mask.show()
+
+    with torch.no_grad():
+        preprocessed_imgs = FFA_preprocess([img], img_size).to("cuda")
+        mask_size = img_size // 14
+        masks = get_foreground_mask([mask], mask_size).to("cuda")
+        emb = encoder.forward_features(preprocessed_imgs)
+
+        grid = emb["x_norm_patchtokens"].view(1, mask_size, mask_size, -1)
+
+        avg_feature = (grid * masks.permute(0, 2, 3, 1)).sum(dim=(1, 2)) / masks.sum(dim=(1, 2, 3)).unsqueeze(-1)
+
+        return avg_feature
+
 def get_object_masked_FFA_features(output_dir, json_filename, object_dataset, model, img_size=448):
     """get FFA features for a dataset. Mainly use this function.
     object_dataset: should have resized images and masks. No need to transform.
@@ -146,8 +183,10 @@ def get_object_features_via_dataloader(output_dir, json_filename, object_dataset
 
 
 # demo usage:
+# features = get_FFA_feature("database/Objects/099_mug_blue/images/020.jpg",  encoder, img_size=448)
+# print(features.shape)
 
-obj_features = get_object_masked_FFA_features('./obj_FFA', 'object_features_l_reg_class.json', object_dataset, encoder, img_size=img_size)
+#obj_features = get_object_masked_FFA_features('./obj_FFA', 'object_features_l_reg_class.json', object_dataset, encoder, img_size=img_size)
 
 # obj_features = get_object_features_via_dataloader('./obj_FFA', 'object_features_small.json', object_dataset, encoder, img_size=img_size)
 # print(obj_features.shape)

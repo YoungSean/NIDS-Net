@@ -6,9 +6,11 @@ import torch
 from PIL import Image
 
 def test_ycb_sample():
-    #img_path = "ros/000047.png"
-    img_path = "/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000000.jpg"
-    query_img_path = "/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000004.jpg"
+    # use ros/000047.png as the sample image to test the model
+    img_path = "ros/000047.png"
+    query_img_path = "ros/000047.png"
+    #img_path = "/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000000.jpg"
+    #query_img_path = "/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000004.jpg"
     img_pil = Image.open(img_path)
     #img_pil.show()
     img = cv2.imread(query_img_path)
@@ -20,8 +22,8 @@ def test_ycb_sample():
     object_features = torch.Tensor(feat_dict['features']).cuda()
     object_features = object_features.view(-1, 42, 1024)
     weight_adapter_path = "ros/bop_obj_shuffle_weight_0430_temp_0.05_epoch_500_lr_0.001_bs_32_weights.pth"
-    model = NIDS(object_features, use_adapter=False, adapter_path=weight_adapter_path,gdino_threshold=0.6)
-    model.get_template_feature_per_image(img_pil)
+    model = NIDS(object_features, use_adapter=True, adapter_path=weight_adapter_path, gdino_threshold=0.2)
+    #model.get_template_feature_per_image(img_pil)
     model.step(img, visualize=True)
 
 

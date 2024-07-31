@@ -56,7 +56,7 @@ def show_box(box, ax, color, label, confidence_score):
     ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor=color, facecolor=(0,0,0,0), lw=2))
     # ax.text(x0, y0, label, color=color, fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
     label_with_score = f"{label}: {confidence_score:.2f}"
-    ax.text(x0, y0, label_with_score, color=color, fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+    ax.text(x0, y0, label_with_score, color=color, fontsize=12) # , bbox=dict(facecolor='white', alpha=0.5)
 
 
 def show_anns(anns):
@@ -157,7 +157,8 @@ def get_background_mask(foreground_masks):
 
 class NIDS:
 
-    def __init__(self, template_features, use_adapter=False, adapter_path=None, gdino_threshold=0.3, sam_model="vit_h"):
+    def __init__(self, template_features=None, use_adapter=False, adapter_path=None,
+                 gdino_threshold=0.3, sam_model="vit_h", class_labels=None):
         encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14')
         encoder.to('cuda')
         encoder.eval()
@@ -165,13 +166,17 @@ class NIDS:
         self.gdino = GroundingDINOObjectPredictor(threshold=gdino_threshold)
         self.SAM = SegmentAnythingPredictor(vit_model=sam_model)
         self.descriptor_model = CustomDINOv2(encoder)
-        # set up the template features for the object instances
-        # the shape of the template features is [num_objects, num_examples, feature_dim]
-        # To compute the cosine similarity between the template features and the scene features, we need to normalize the features
-        self.template_features = nn.functional.normalize(template_features, dim=-1, p=2)
-        assert self.template_features is not None, "Template features are not provided!"
-        self.num_examples = self.template_features.shape[1]
-        self.num_objects = self.template_features.shape[0]
+        if template_features is not None:
+            # set up the template features for the object instances
+            # the shape of the template features is [num_objects, num_examples, feature_dim]
+            # To compute the cosine similarity between the template features and the scene features, we need to normalize the features
+            self.template_features = nn.functional.normalize(template_features, dim=-1, p=2)
+            self.num_examples = self.template_features.shape[1]
+            self.num_objects = self.template_features.shape[0]
+        else:
+            self.template_features = None
+            print("No template features are provided")
+
 
         self.object_ids = [] # object ids start from 0
         self.use_adapter = use_adapter
@@ -179,6 +184,8 @@ class NIDS:
             self.adapter = WeightAdapter(1024, reduction=4).to('cuda')
             self.adapter.load_state_dict(torch.load(adapter_path))
             self.adapter.eval()
+        if class_labels:
+            self.class_labels = class_labels
 
 
     def get_template_features(self, template_image, mask):
@@ -237,7 +244,7 @@ class NIDS:
         return mask_tensor
 
 
-    def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.60, visualize = False):
+    def step(self, image_np, THRESHOLD_OBJECT_SCORE = 0.60, visualize = False, save_path=None):
         print("the shape of template features is: ", self.template_features.shape)
         image_pil = Image.fromarray(image_np).convert("RGB")
         # image_pil.show()
@@ -308,13 +315,21 @@ class NIDS:
             ax.imshow(image_np)
             colors = show_anns(results)  # Get colors used for masks
             for ann, color in zip(results, colors):
-                show_box(ann['bbox'], ax, color=color, label=str(ann['category_id']), confidence_score=ann['score'])
+                if self.class_labels:
+                    label = self.class_labels[ann['category_id']]
+                else:
+                    label = str(ann['category_id'])
+                show_box(ann['bbox'], ax, color=color, label=label, confidence_score=ann['score'])
             ax.axis('off')
             ax.set_title('Image with Annotations')
 
             # Display all the plots
             plt.tight_layout()
-            plt.show()
+            if save_path:
+                plt.savefig(save_path)
+            else:
+                plt.show()
+
 
 
         return results, mask
@@ -347,6 +362,7 @@ class NIDS:
         if self.use_adapter:
             with torch.no_grad():
                 query_decriptors = self.adapter(query_decriptors)
+
         query_decriptors = torch.unsqueeze(query_decriptors, 0)
         self.template_features = nn.functional.normalize(query_decriptors, dim=-1, p=2)
         self.num_objects = 1

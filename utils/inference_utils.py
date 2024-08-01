@@ -547,6 +547,54 @@ def get_features(images, masks, encoder, variant="Crop-Feat", device="cuda", img
 
         return avg_feature
 
+def get_features_CLIP(image, mask, encoder, preprocess, device="cuda", img_size=224):
+    """Get Foreground feature average from the model
+
+    Args:
+        images: input images. a list of PIL.Image
+        masks: input masks. a list of PIL.Image
+        model: model to extract features
+
+    Returns:
+        features: extracted features. shape of [N, C]
+    """
+    with torch.no_grad():
+        image_input = preprocess(image).unsqueeze(0).to(device)
+        mask_size = img_size // 14
+        masks = get_foreground_mask([mask], mask_size).to(device)
+        #print(image_input.shape)
+        image_features = encoder.encode_image(image_input)
+
+        grid = image_features.view(1, mask_size, mask_size, -1)
+        avg_feature = (grid * masks.permute(0, 2, 3, 1)).sum(dim=(1, 2)) / masks.sum(dim=(1, 2, 3)).unsqueeze(-1)
+
+        return avg_feature
+
+def get_features_SAM(image, mask, encoder, device="cuda", img_size=1024):
+    """Get Foreground feature average from the model
+
+    Args:
+        images: input images. a list of PIL.Image
+        masks: input masks. a list of PIL.Image
+        model: model to extract features
+
+    Returns:
+        features: extracted features. shape of [N, C]
+    """
+    with torch.no_grad():
+        img = np.array(image, dtype=np.uint8)
+        encoder.set_image(img)
+        mask_size = img_size // 16
+        masks = get_foreground_mask([mask], mask_size).to("cuda")
+        # And this is how you can get the image embeddings
+        image_features = encoder.features  # Has shape: 1 x 256 x 64 x 64
+
+        grid = image_features.permute(0, 2, 3, 1)
+        avg_feature = (grid * masks.permute(0, 2, 3, 1)).sum(dim=(1, 2)) / masks.sum(dim=(1, 2, 3)).unsqueeze(-1)
+
+        return avg_feature
+
+
 def get_cls_token(images, masks, encoder, device="cuda", img_size=448):
     """Get cls token from the model
 

@@ -41,7 +41,7 @@ sys.path.append(".")
 from utils.visualizer import ColorMode, Visualizer
 from utils.instance_det_dataset import RealWorldDataset
 from utils.inference_utils import compute_similarity, stableMatching, get_bbox_masks_from_gdino_sam, \
-    get_object_proposal, getColor, create_instances, nms, apply_nms, get_features
+    get_object_proposal, getColor, create_instances, nms, apply_nms, get_features, get_cls_token
 from tqdm import trange
 from adapter import ModifiedClipAdapter, WeightAdapter
 from utils.img_utils import get_masked_image
@@ -110,7 +110,7 @@ def get_args_parser(
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 448
 tag = "mask"  # bbox
-img_id = 2
+img_id = 39
 args = args_parser.parse_args(args=["--train_path", "database/Objects",
                                     "--test_path", "test_data/test_1/test_"+str(img_id).zfill(3)+".jpg",  # test_002
                                     "--output_dir", "exps/demo0501_" + str(imsize) + "_" + tag,
@@ -151,8 +151,8 @@ if use_adapter:
 # In[9]:
 
 output_dir = './obj_FFA'
-json_filename = 'object_features_vitl14_reg.json'
-# json_filename = "object_features_l_reg_class.json"
+#json_filename = 'object_features_vitl14_reg.json'
+json_filename = "object_features_l_reg_class.json"
 if use_adapter:
     output_dir = './adapted_obj_feats'
     json_filename = adapter_args+'.json'
@@ -180,6 +180,7 @@ image_path = args.test_path
 logging.info("Initialize object detectors")
 gdino = GroundingDINOObjectPredictor(use_vitb=False, threshold=0.15)
 SAM = SegmentAnythingPredictor(vit_model="vit_h")
+# SAM = SegmentAnythingPredictor(vit_model="vit_t") # use mobile sam
 
 logging.info("Open the image and convert to RGB format")
 image_pil = PILImg.open(image_path).convert("RGB")
@@ -205,7 +206,8 @@ scene_features = []
 for i in trange(len(cropped_imgs)):
     img = cropped_imgs[i]
     mask = cropped_masks[i]
-    ffa_feature= get_features([img], [mask], encoder,device=device, img_size=imsize)
+    #ffa_feature= get_features([img], [mask], encoder,device=device, img_size=imsize)
+    ffa_feature = get_cls_token([img], [mask], encoder, device=device, img_size=imsize)
     with torch.no_grad():
         if use_adapter:
             ffa_feature = adapter(ffa_feature)

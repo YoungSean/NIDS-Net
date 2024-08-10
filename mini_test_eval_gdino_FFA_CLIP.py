@@ -105,7 +105,7 @@ def get_args_parser(
 
 # In[8]:
 # set the scene level here
-scene_level = 'easy'  # all / easy / hard
+scene_level = 'all'  # all / easy / hard
 # Default args and initialize model
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 224
@@ -125,7 +125,7 @@ import torch
 device = "cuda" if torch.cuda.is_available() else "cpu"
 encoder, preprocess = clip.load('ViT-L/14', device)
 
-use_adapter = False
+use_adapter = True
 adapter_type = "weight"
 if use_adapter:
     input_features = 1024 #768, 1024, the vector dimension
@@ -135,7 +135,7 @@ if use_adapter:
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = ModifiedClipAdapter(input_features, reduction=4, ratio=0.6).to('cuda')
     elif adapter_type == "weight":
-        adapter_args = 'Ins_weighted_10sigmoid_ratio_0.6_temp_0.05_epoch_40_lr_0.001_bs_1024_vec_reduction_4_L2e4_vitl_reg'
+        adapter_args = 'clip_insDet_weight_0523_temp_0.05_epoch_80_lr_0.001_bs_1024_vec_reduction_4'
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = WeightAdapter(input_features, reduction=4).to('cuda')
 
@@ -216,7 +216,7 @@ for image_path in tqdm(image_paths):
     for i in range(num_imgs):
         img = cropped_imgs[i]
         mask = cropped_masks[i]
-        ffa_feature= get_features_CLIP(img, mask, encoder, preprocess, img_size=224)
+        ffa_feature= get_features_CLIP(img, mask, encoder, preprocess, img_size=224).float()
         # img = cropped_imgs[i:i+32]
         # mask = cropped_masks[i:i+32]
         # ffa_feature = get_features(img, mask, encoder, img_size=imsize)

@@ -97,6 +97,38 @@ def get_bbox_masks_from_gdino_sam(image_path, gdino, SAM, text_prompt='objects',
         bbox_annotated_pil.show()
     return accurate_bboxs, masks
 
+def get_bbox_masks_via_sam(image_path, SAM, visualize=False):
+    """
+    Get bounding boxes and masks from gdino and sam
+    @param image_path: the image path
+    @param gdino: the model of grounding dino
+    @param SAM: segment anything model or its variants
+    @param text_prompt: generally 'objects' for object detection of noval objects
+    @param visualize: if True, visualize the result
+    @return: the bounding boxes and masks of the objects.
+    Bounding boxes are in the format of [x_min, y_min, x_max, y_max] and shape of (N, 4).
+    Masks are in the format of (N, H, W) and the value is True for object and False for background.
+    They are both in the format of torch.tensor.
+    """
+    # logging.info("Open the image and convert to RGB format")
+    image_pil = PILImg.open(image_path).convert("RGB")
+    # Get the original size of the image
+    original_size = image_pil.size  # This returns a tuple (width, height)
+
+    # Calculate the new size (1/4 of the original size)
+    new_size = (original_size[0] // 4, original_size[1] // 4)
+    # Resize the image
+    resized_image = image_pil.resize(new_size, Image.Resampling.LANCZOS)
+
+    # logging.info("GDINO: Predict bounding boxes, phrases, and confidence scores")
+    with torch.no_grad():
+        # Scale bounding boxes to match the original image size
+        # image_pil_bboxes = gdino.bbox_to_scaled_xyxy(bboxes, w, h)
+
+        logging.info("SAM prediction")
+        image_pil_bboxes, masks = SAM.predict(resized_image, None)
+    return masks
+
 def get_object_proposal(image_path, bboxs, masks, tag="mask", ratio=1.0, save_rois=True, output_dir='object_proposals', save_segm=False, save_proposal=False):
     """
     Get object proposals from the image according to the bounding boxes and masks.
@@ -176,6 +208,101 @@ def get_object_proposal(image_path, bboxs, masks, tag="mask", ratio=1.0, save_ro
         sel_roi['roi_id'] = int(ind)
         sel_roi['image_id'] = int(scene_name.split('_')[-1])
         sel_roi['bbox'] = [int(x0 * ratio), int(y0 * ratio), int((x1 - x0) * ratio), int((y1 - y0) * ratio)]
+        sel_roi['area'] = np.count_nonzero(mask)
+        # if you need segmentation mask, uncomment the following line
+        # sel_roi['mask'] = mask  # boolean numpy array. H X W
+        sel_roi['roi_dir'] = os.path.join(output_dir, scene_name, scene_name + '_' + str(ind).zfill(3) + '.png')
+        sel_roi['image_dir'] = image_path
+        sel_roi['image_width'] = scene_image.shape[1]
+        sel_roi['image_height'] = scene_image.shape[0]
+        if save_segm:
+            sel_roi['segmentation'] = rle  # Add RLE segmentation
+        sel_roi['scale'] = int(1 / ratio)
+        sel_rois.append(sel_roi)
+    if save_proposal:
+        with open(os.path.join(output_dir, 'proposals_on_' + scene_name + '.json'), 'w') as f:
+            json.dump(sel_rois, f)
+    return rois, sel_rois, cropped_imgs, cropped_masks
+
+def get_object_proposal_via_sam(image_path, bboxs, masks, tag="mask", ratio=1.0, save_rois=True, output_dir='object_proposals', save_segm=False, save_proposal=False):
+    """
+    Get object proposals from the image according to the bounding boxes and masks.
+
+    @param image_path:
+    @param bboxs: numpy array, the bounding boxes of the objects [N, 4]
+    @param masks: Boolean numpy array of shape [N, H, W], True for object and False for background
+    @param tag: use mask or bbox to crop the object
+    @param ratio: ratio to resize the image
+    @param save_rois: if True, save the cropped object proposals
+    @param output_dir: the folder to save the cropped object proposals
+    @return: the cropped object proposals and the object proposals information
+    """
+    raw_image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+    image_height, image_width = raw_image.shape[:-1]
+    scene_name = os.path.basename(image_path).split('.')[0]
+    sel_rois = []
+    rois = []
+    cropped_masks = []
+    cropped_imgs = []
+    # ratio = 0.25
+    if ratio != 1.0:
+        scene_image = cv2.resize(raw_image, (int(raw_image.shape[1] * ratio), int(raw_image.shape[0] * ratio)),
+                               cv2.INTER_LINEAR)
+    else:
+        scene_image = raw_image
+    # scene_image = cv2.resize(raw_image, (int(raw_image.shape[1] * ratio), int(raw_image.shape[0] * ratio)),
+    #                          cv2.INTER_LINEAR)
+    for ind in range(len(masks)):
+        # bbox
+        x0 = int(bboxs[ind][0])
+        y0 = int(bboxs[ind][1])
+        x1 = int(bboxs[ind][2])
+        y1 = int(bboxs[ind][3])
+
+        # load mask
+        mask = masks[ind].squeeze(0).cpu().numpy()
+        # Assuming `mask` is your boolean numpy array with shape (H, W)
+        rle = None
+        if save_segm:
+            rle = maskUtils.encode(np.asfortranarray(mask.astype(np.uint8)))
+            rle['counts'] = rle['counts'].decode('ascii')  # If saving to JSON, ensure counts is a string
+        cropped_mask = mask[y0:y1, x0:x1]
+        cropped_mask = Image.fromarray(cropped_mask.astype(np.uint8) * 255)
+        cropped_masks.append(cropped_mask)
+        # show mask
+        cropped_img = scene_image[y0:y1, x0:x1]
+        cropped_img = Image.fromarray(cropped_img)
+        # cropped_img.show()
+        # cropped_mask.show()
+        # try masked image
+        # cropped_mask_array = np.array(cropped_mask).astype(bool)
+        # cropped_masked_img = cropped_img * cropped_mask_array[:, :, None]
+        # cropped_img = Image.fromarray(cropped_masked_img)
+
+        cropped_imgs.append(cropped_img)
+
+        # save roi region
+        if save_rois:
+            # invert background to white
+            new_image = Image.new('RGB', size=(image_width, image_height), color=(255, 255, 255))
+            new_image.paste(Image.fromarray(raw_image), (0, 0),
+                            mask=Image.fromarray(mask).resize((image_width, image_height)))
+            if tag == "mask":
+                roi = gen_square_crops(new_image, [x0, y0, x1, y1])  # crop by mask
+            elif tag == "bbox":
+                roi = gen_square_crops(Image.fromarray(raw_image), [x0, y0, x1, y1])  # crop by bbox
+            else:
+                ValueError("Wrong tag!")
+
+            rois.append(roi)
+            os.makedirs(os.path.join(output_dir, scene_name), exist_ok=True)
+            roi.save(os.path.join(output_dir, scene_name, scene_name + '_' + str(ind).zfill(3) + '.png'))
+
+        # save bbox
+        sel_roi = dict()
+        sel_roi['roi_id'] = int(ind)
+        sel_roi['image_id'] = int(scene_name.split('_')[-1])
+        sel_roi['bbox'] = [int(x0), int(y0), int((x1 - x0)), int((y1 - y0))]
         sel_roi['area'] = np.count_nonzero(mask)
         # if you need segmentation mask, uncomment the following line
         # sel_roi['mask'] = mask  # boolean numpy array. H X W
@@ -564,6 +691,30 @@ def get_features_CLIP(image, mask, encoder, preprocess, device="cuda", img_size=
         masks = get_foreground_mask([mask], mask_size).to(device)
         #print(image_input.shape)
         image_features = encoder.encode_image(image_input)
+
+        grid = image_features.view(1, mask_size, mask_size, -1)
+        avg_feature = (grid * masks.permute(0, 2, 3, 1)).sum(dim=(1, 2)) / masks.sum(dim=(1, 2, 3)).unsqueeze(-1)
+
+        return avg_feature
+
+def get_features_Deit3(image, mask, encoder, transforms, device="cuda", img_size=224):
+    """Get Foreground feature average from the model
+
+    Args:
+        images: input images. a list of PIL.Image
+        masks: input masks. a list of PIL.Image
+        model: model to extract features
+
+    Returns:
+        features: extracted features. shape of [N, C]
+    """
+    with torch.no_grad():
+        output = encoder.forward_features(transforms(image).unsqueeze(0).to('cuda'))
+        # output is unpooled, a (1, 197, 1024) shaped tensor
+        # Remove the class token
+        image_features = output[:, 1:, :].float()  # shape (1, 196, 1024)
+        mask_size = img_size // 14
+        masks = get_foreground_mask([mask], mask_size).to("cuda")
 
         grid = image_features.view(1, mask_size, mask_size, -1)
         avg_feature = (grid * masks.permute(0, 2, 3, 1)).sum(dim=(1, 2)) / masks.sum(dim=(1, 2, 3)).unsqueeze(-1)

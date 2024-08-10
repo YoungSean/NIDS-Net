@@ -115,7 +115,8 @@ if __name__ == '__main__':
     dataset_name = f'insDet_{adapter_type}_0523'
     temperature = 0.05
     ratio = 0.6
-    feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features_vitl14_reg.json', num_object=100) # 100 objects in total
+    # feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features_vitl14_reg.json', num_object=100) # 100 objects in total
+    feature_dataset = FeatureDataset(data_json='./other_FFA/object_features_deit_L14.json', num_object=100)
     # Assuming 'features' is your (N, 1024) tensor
     batch_size = 1024
 
@@ -127,7 +128,7 @@ if __name__ == '__main__':
     cur_feature_dataset = feature_dataset
 
     # Example training loop
-    input_features = 1024  # Size of the input feature vector, 1024 for large, 768 for base, 384 for small
+    input_features = 784  # Size of the input feature vector, 1024 for large, 768 for base, 384 for small
     reduction = 4 # Reduction factor for the hidden layer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if adapter_type == 'clip':
@@ -138,7 +139,7 @@ if __name__ == '__main__':
         model = WeightAdapter(input_features, reduction=reduction).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4) #
     criterion = InfoNCELoss(temperature=temperature).to(device)
-    epochs = 40
+    epochs = 80
 
     dataloader = DataLoader(cur_feature_dataset, batch_size=batch_size, shuffle=False)
 
@@ -158,7 +159,7 @@ if __name__ == '__main__':
 
 
     save_model = True
-    adapter_args = f'{dataset_name}_temp_{temperature}_epoch_{epochs}_lr_{learning_rate}_bs_{batch_size}_vec_reduction_{reduction}'
+    adapter_args = f'deit3_{dataset_name}_temp_{temperature}_epoch_{epochs}_lr_{learning_rate}_bs_{batch_size}_vec_reduction_{reduction}'
     os.makedirs('adapter_weights/adapter2FC', exist_ok=True)
     if save_model:
         model_path = f'adapter_weights/adapter2FC/{adapter_args}_weights.pth'

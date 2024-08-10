@@ -110,7 +110,7 @@ def get_args_parser(
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 1024
 tag = "mask"  # bbox
-img_id = 2
+img_id = 21
 args = args_parser.parse_args(args=["--train_path", "database/Objects",
                                     "--test_path", "test_data/test_1/test_"+str(img_id).zfill(3)+".jpg",  # test_002
                                     "--output_dir", "exps/demo0501_" + str(imsize) + "_" + tag,

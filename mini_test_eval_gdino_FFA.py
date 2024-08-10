@@ -105,7 +105,7 @@ def get_args_parser(
 
 # In[8]:
 # set the scene level here
-scene_level = 'hard'  # all / easy / hard
+scene_level = 'all'  # all / easy / hard
 # Default args and initialize model
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 448
@@ -179,6 +179,7 @@ from robokit.ObjDetection import GroundingDINOObjectPredictor, SegmentAnythingPr
 logging.info("Initialize object detectors")
 gdino = GroundingDINOObjectPredictor(use_vitb=False, threshold=0.15)
 SAM = SegmentAnythingPredictor(vit_model="vit_h")
+# SAM = SegmentAnythingPredictor(vit_model="vit_t") # use mobile sam
 
 
 # In[11]:

@@ -110,7 +110,7 @@ def get_args_parser(
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
 imsize = 224
 tag = "mask"  # bbox
-img_id = 2
+img_id = 39
 args = args_parser.parse_args(args=["--train_path", "database/Objects",
                                     "--test_path", "test_data/test_1/test_"+str(img_id).zfill(3)+".jpg",  # test_002
                                     "--output_dir", "exps/demo0501_" + str(imsize) + "_" + tag,
@@ -127,7 +127,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 encoder, preprocess = clip.load('ViT-L/14', device)
 
 # Assuming the model's architecture is defined in 'FeatureVectorModel' class
-use_adapter = False
+use_adapter = True
 adapter_type = "weight"
 if use_adapter:
     input_features = 1024
@@ -136,7 +136,7 @@ if use_adapter:
         model_path = 'adapter_weights/adapter2FC/'+adapter_args+'_weights.pth'
         adapter = ModifiedClipAdapter(input_features, reduction=4, ratio=0.6).to('cuda')
     elif adapter_type == "weight":
-        adapter_args = 'Ins_weighted_10sigmoid_ratio_0.6_temp_0.05_epoch_40_lr_0.001_bs_1024_vec_reduction_4_L2e4_vitl_reg'
+        adapter_args = 'clip_insDet_weight_0523_temp_0.05_epoch_80_lr_0.001_bs_1024_vec_reduction_4'
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = WeightAdapter(input_features, reduction=4).to('cuda')
 
@@ -207,7 +207,7 @@ scene_features = []
 for i in trange(len(cropped_imgs)):
     img = cropped_imgs[i]
     mask = cropped_masks[i]
-    ffa_feature= get_features_CLIP(img, mask, encoder, preprocess, img_size=224)
+    ffa_feature= get_features_CLIP(img, mask, encoder, preprocess, img_size=224).float()
     with torch.no_grad():
         if use_adapter:
             ffa_feature = adapter(ffa_feature)

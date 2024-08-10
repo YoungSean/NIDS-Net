@@ -123,17 +123,17 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 sam = sam_model_registry["vit_l"](checkpoint="ckpts/sam_weights/sam_vit_l_0b3195.pth").to(device)
 predictor = SamPredictor(sam)
 
-use_adapter = False
+use_adapter = True
 adapter_type = "weight"
 if use_adapter:
-    input_features = 1024 #768, 1024, the vector dimension
+    input_features = 256 #768, 1024, the vector dimension
     if adapter_type == "clip":
         # adapter_args = 'Ins_clip_ratio_0.6_temp_0.05_epoch_40_lr_0.0001_bs_1024_vec_reduction_4_L2e4_vitl_reg'
         adapter_args = 'Ins_0413__ratio_0.6_temp_0.05_epoch_40_lr_0.0001_bs_512_vec_reduction_4_L2e4_vitl_reg'
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = ModifiedClipAdapter(input_features, reduction=4, ratio=0.6).to('cuda')
     elif adapter_type == "weight":
-        adapter_args = 'Ins_weighted_10sigmoid_ratio_0.6_temp_0.05_epoch_40_lr_0.001_bs_1024_vec_reduction_4_L2e4_vitl_reg'
+        adapter_args = 'sam_insDet_weight_0523_temp_0.05_epoch_80_lr_0.001_bs_1024_vec_reduction_4'
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = WeightAdapter(input_features, reduction=4).to('cuda')
 
@@ -214,7 +214,7 @@ for image_path in tqdm(image_paths):
     for i in range(num_imgs):
         img = cropped_imgs[i]
         mask = cropped_masks[i]
-        ffa_feature= get_features_SAM(img, mask, predictor,img_size=1024)
+        ffa_feature= get_features_SAM(img, mask, predictor,img_size=1024) #.float()
         # img = cropped_imgs[i:i+32]
         # mask = cropped_masks[i:i+32]
         # ffa_feature = get_features(img, mask, encoder, img_size=imsize)

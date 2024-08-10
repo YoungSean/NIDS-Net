@@ -16,13 +16,27 @@ from torch.utils.data import Dataset, DataLoader
 from utils.instance_det_dataset import BOPDataset, SAM6DBOPDataset, OWIDDataset, MVImgDataset
 import time
 import math
-from utils.inference_utils import FFA_preprocess, get_foreground_mask, get_cls_token, get_features_CLIP, get_features_SAM
+from utils.inference_utils import (FFA_preprocess, get_foreground_mask, get_cls_token,
+                                   get_features_CLIP, get_features_SAM,get_features_Deit3)
 
-from segment_anything import SamPredictor, SamAutomaticMaskGenerator, sam_model_registry
+# from segment_anything import SamPredictor, SamAutomaticMaskGenerator, sam_model_registry
+#
+# device = "cuda" if torch.cuda.is_available() else "cpu"
+# sam = sam_model_registry["vit_l"](checkpoint="ckpts/sam_weights/sam_vit_l_0b3195.pth").to(device)
+# predictor = SamPredictor(sam)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-sam = sam_model_registry["vit_l"](checkpoint="ckpts/sam_weights/sam_vit_l_0b3195.pth").to(device)
-predictor = SamPredictor(sam)
+import timm
+
+model = timm.create_model(
+    'deit3_large_patch16_224.fb_in22k_ft_in1k',
+    pretrained=True,
+    num_classes=0,  # remove classifier nn.Linear
+)
+model = model.eval()
+model.to('cuda')
+# get model specific transforms (normalization, resize)
+data_config = timm.data.resolve_model_data_config(model)
+transforms = timm.data.create_transform(**data_config, is_training=False)
 
 # Function to find the bounding box of the non-zero regions in the mask
 def find_mask_bbox(mask_array):
@@ -137,6 +151,47 @@ def get_FFA_feature_CLIP(img_path, encoder, img_size=224):
 
         return avg_feature
 
+def get_FFA_feature_DEIT3(img_path, encoder, img_size=224):
+    """used for a pair of rgb and mask images
+    use CLIP model to extract features
+    """
+    mask_path = img_path.replace('images', 'masks').replace('.jpg', '.png')
+    mask = Image.open(mask_path)
+    mask = mask.convert('L')
+
+    with open(img_path, 'rb') as f:
+        img = Image.open(f)
+        img = img.convert('RGB')
+
+    w, h = img.size
+
+    if (img_size is not None) and (min(w, h) > img_size):
+        img.thumbnail((img_size, img_size), Image.LANCZOS)
+        mask.thumbnail((img_size, img_size), Image.BILINEAR)
+
+        # mask.show()
+    else:
+        new_w = math.ceil(w / 14) * 14
+        new_h = math.ceil(h / 14) * 14
+        img = img.resize((new_w, new_h), Image.LANCZOS)
+    # mask = mask.resize((16 , 16), Image.BILINEAR)
+    img.show()
+    mask.show()
+
+    with torch.no_grad():
+        output = encoder.forward_features(transforms(img).unsqueeze(0).to('cuda'))
+        # output is unpooled, a (1, 197, 1024) shaped tensor
+        # Remove the class token
+        image_features = output[:, 1:, :].float()  # shape (1, 196, 1024)
+        mask_size = img_size // 14
+        masks = get_foreground_mask([mask], mask_size).to("cuda")
+
+        grid = image_features.view(1, mask_size, mask_size, -1)
+
+        avg_feature = (grid * masks.permute(0, 2, 3, 1)).sum(dim=(1, 2)) / masks.sum(dim=(1, 2, 3)).unsqueeze(-1)
+
+        return avg_feature
+
 def get_FFA_feature_SAM(img_path, predictor, img_size=1024):
     """used for a pair of rgb and mask images
     use CLIP model to extract features
@@ -200,6 +255,45 @@ def get_object_masked_FFA_features_CLIP(output_dir, json_filename, object_datase
             # img.show()
             mask = mask.convert('L')
             ffa_features = get_features_CLIP(img, mask, model, preprocess,img_size=img_size)
+            object_features.append(ffa_features)
+
+        object_features = torch.cat(object_features, dim=0)
+
+        feat_dict = dict()
+        feat_dict['features'] = object_features.detach().cpu().tolist()
+        end_time = time.time()
+
+        # Calculate and print the total time
+        print(f"Total running time: {end_time - start_time} seconds")
+
+        with open(os.path.join(output_dir, json_filename), 'w') as f:
+            json.dump(feat_dict, f)
+
+
+    return object_features
+
+def get_object_masked_FFA_features_Deit3(output_dir, json_filename, object_dataset, model, transforms, img_size=224):
+    """get FFA features for a dataset. Mainly use this function.
+    object_dataset: should have resized images and masks. No need to transform.
+    """
+    if os.path.exists(os.path.join(output_dir, json_filename)):
+        with open(os.path.join(output_dir, json_filename), 'r') as f:
+            feat_dict = json.load(f)
+
+        object_features = torch.Tensor(feat_dict['features']).cuda()
+
+    else:
+        # Capture the start time
+        start_time = time.time()
+        batch_size = 1 # Define the batch size
+        object_features = []
+
+
+        for i in trange(len(object_dataset)):
+            img, _, mask = object_dataset[i]
+            # img.show()
+            mask = mask.convert('L')
+            ffa_features = get_features_Deit3(img, mask, model, transforms,img_size=img_size)
             object_features.append(ffa_features)
 
         object_features = torch.cat(object_features, dim=0)
@@ -306,9 +400,15 @@ def get_object_masked_FFA_features_SAM(output_dir, json_filename, object_dataset
 # features = get_FFA_feature_SAM("database/Objects/099_mug_blue/images/020.jpg", predictor, img_size=1024)
 # print(features.shape)
 
-# obj_features = get_object_masked_FFA_features_CLIP('./other_FFA', 'object_features_clip_L14.json', object_dataset, encoder, preprocess)
+features = get_FFA_feature_DEIT3("database/Objects/099_mug_blue/images/020.jpg", model, img_size=224)
+print(features.shape)
 
-obj_features = get_object_masked_FFA_features_SAM('./other_FFA', 'object_features_sam_L14.json', object_dataset, predictor)
+# obj_features = get_object_masked_FFA_features_CLIP('./other_FFA', 'object_features_clip_L14.json', object_dataset, encoder, preprocess)
+# obj_features = get_object_masked_FFA_features_Deit3('./other_FFA', 'object_features_deit_L14.json', object_dataset, model, transforms)
+
+# obj_features = get_object_masked_FFA_features_SAM('./other_FFA', 'object_features_sam_L14.json', object_dataset, predictor)
+
+
 
 # obj_features = get_object_features_via_dataloader('./obj_FFA', 'object_features_small.json', object_dataset, encoder, img_size=img_size)
 # print(obj_features.shape)

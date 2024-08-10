@@ -13,6 +13,7 @@ from groundingdino.util.inference import predict
 from groundingdino.util.utils import clean_state_dict
 # from segment_anything import SamPredictor, SamAutomaticMaskGenerator, sam_model_registry
 from mobile_sam import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
+# from segment_anything_hq import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
 
 os.system("python setup.py build develop --user")
 # os.system("pip install packaging==21.3")
@@ -203,6 +204,7 @@ class SegmentAnythingPredictor(ObjectPredictor):
             "vit_b": "ckpts/sam_weights/sam_vit_b_01ec64.pth",
             "vit_h": "ckpts/sam_weights/sam_vit_h_4b8939.pth",
             "vit_l": "ckpts/sam_weights/sam_vit_l_0b3195.pth",
+            # "vit_h": "ckpts/sam_weights/hq_sam_weights/sam_hq_vit_h.pth",
         }
         self.sam = sam_model_registry[vit_model](checkpoint=sam_weight_path[vit_model])
         self.mask_generator = SamAutomaticMaskGenerator(self.sam)  # generate masks for entire image

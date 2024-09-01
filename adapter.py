@@ -112,10 +112,10 @@ class InfoNCELoss(nn.Module):
 
 if __name__ == '__main__':
     adapter_type = 'weight'
-    dataset_name = f'insDet_{adapter_type}_0523'
+    dataset_name = f'ros_{adapter_type}_0810_drink_snack'
     temperature = 0.05
     ratio = 0.6
-    feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features_vitl14_reg.json', num_object=100) # 100 objects in total
+    feature_dataset = FeatureDataset(data_json='./ros/object_features/drink_snack_features.json', num_object=22) # 100 objects in total
     # Assuming 'features' is your (N, 1024) tensor
     batch_size = 1024
 
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         model = WeightAdapter(input_features, reduction=reduction).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4) #
     criterion = InfoNCELoss(temperature=temperature).to(device)
-    epochs = 40
+    epochs = 80
 
     dataloader = DataLoader(cur_feature_dataset, batch_size=batch_size, shuffle=False)
 

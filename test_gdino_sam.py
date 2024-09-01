@@ -8,11 +8,12 @@ from robokit.ObjDetection import GroundingDINOObjectPredictor, SegmentAnythingPr
 def main(argv):
     # Path to the input image
     image_path = argv[0]
-    text_prompt = 'objects'
+    #text_prompt = 'coke'
+    text_prompt = "original coke. diet coke.sprite. boston lager. AW root beer. zero coke. cranberry. purple power. blue power. dr pepper. water. fanta. Background"
 
     try:
         logging.info("Initialize object detectors")
-        gdino = GroundingDINOObjectPredictor(threshold=0.5)
+        gdino = GroundingDINOObjectPredictor(threshold=0.2)
         SAM = SegmentAnythingPredictor()
 
         logging.info("Open the image and convert to RGB format")
@@ -44,5 +45,5 @@ if __name__ == "__main__":
     # Run the main function with the input image path
     # app.run(main, ['imgs/color-000078.png'])
     # app.run(main, ['imgs/color-000019.png'])
-    app.run(main, ['imgs/clutter-test.png'])
-    #app.run(main, ["/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000007.jpg"])
+    #app.run(main, ['imgs/clutter-test.png'])
+    app.run(main, ["/home/yangxiao/Documents/NIDS-Net/datasets/drinks_and_snacks/drink_clutter/color-000001.jpg"])

@@ -210,6 +210,14 @@ Display masks, object IDs, and scores using Detectron2.
 python -m src.scripts.visualize_detectron2 dataset_name=$DATASET_NAME input_file=$INPUT_FILE output_dir=$OUTPUT_DIR
 ```
 
+### Inference on robi Dataset
+
+1. train adapter
+2. set NIDS-NET's adpater to true
+3. inference
+4. evaulation
+
+
 ## Real-World Robot Experiment
 We test our NIDS-Net on YCBV objects using ROS with a Fetch robot. We use 
 1. template embeddings of synthetic images from CNOS: "ros/weight_obj_shuffle2_0501_bs32_epoch_500_adapter_descriptors_pbr.json"

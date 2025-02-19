@@ -2,7 +2,7 @@ results/
 ckpts/
 imgs_dev/
 hf_gdino.py
-
+data_robi/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 **/__pycache__/
@@ -170,3 +170,4 @@ cython_debug/
 /dinov2/
 /robokit/RoboKit.egg-info/
 /robokit/RoboKit.egg-info/
+/datasets/bop_challenge/datasets/*

@@ -1,4 +1,4 @@
-from adapter_dataset import ObjectFeatureDataset
+from utils.adapter_dataset import ObjectFeatureDataset
 import torch
 
 from torch.utils.data import DataLoader, ConcatDataset
@@ -23,22 +23,24 @@ def main(cfg : DictConfig):
 
     ### bop challenge datasets
     print(os.getcwd())
-    lmo_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/lmo/descriptors_pbr.pth',
-                                                     num_object=8)
-    tless_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tless/descriptors_pbr.pth',
-                                                       num_object=30, label_offset=8)
-    tudl_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tudl/descriptors_pbr.pth',
-                                                      num_object=3, label_offset=38)
-    icbin_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/icbin/descriptors_pbr.pth',
-                                                       num_object=2, label_offset=41)
-    itodd_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/itodd/descriptors_pbr.pth',
-                                                       num_object=28, label_offset=43)
-    hb_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/hb/descriptors_pbr.pth',
-                                                    num_object=33, label_offset=71)
-    ycbv_bo23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/ycbv/descriptors_pbr.pth',
-                                                     num_object=21, label_offset=104)
+    # lmo_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/lmo/descriptors_pbr.pth',
+    #                                                  num_object=8)
+    # tless_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tless/descriptors_pbr.pth',
+    #                                                    num_object=30, label_offset=8)
+    # tudl_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tudl/descriptors_pbr.pth',
+    #                                                   num_object=3, label_offset=38)
+    # icbin_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/icbin/descriptors_pbr.pth',
+    #                                                    num_object=2, label_offset=41)
+    # itodd_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/itodd/descriptors_pbr.pth',
+    #                                                    num_object=28, label_offset=43)
+    # hb_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/hb/descriptors_pbr.pth',
+    #                                                 num_object=33, label_offset=71)
+    # ycbv_bo23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/ycbv/descriptors_pbr.pth',
+    #                                                  num_object=21, label_offset=104)
+    robi_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/robi/descriptors_pbr.pth',
+                                                     num_object=7)
 
-    cur_feature_dataset = hb_bop23_feature_dataset
+    cur_feature_dataset = robi_bop23_feature_dataset
 
     # Example training loop
     input_features = cfg.params.input_features  # Size of the input feature vector
@@ -54,9 +56,7 @@ def main(cfg : DictConfig):
     epochs = cfg.params.epochs
     if combine_dataset:
         combined_dataset = ConcatDataset(
-            [lmo_bop23_feature_dataset, tless_bop23_feature_dataset, tudl_bop23_feature_dataset,
-             icbin_bop23_feature_dataset, itodd_bop23_feature_dataset, hb_bop23_feature_dataset,
-             ycbv_bo23_feature_dataset])
+            [robi_bop23_feature_dataset])
         dataloader = DataLoader(combined_dataset, batch_size=batch_size, shuffle=shuffle)
     else:
         dataloader = DataLoader(cur_feature_dataset, batch_size=batch_size, shuffle=shuffle)

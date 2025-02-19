@@ -14,4 +14,4 @@ root_dir: ${machine.root_dir}/datasets/
 dataset_name:
 input_file:
 output_dir:
-conf_threshold: 0.7
+conf_threshold: 0.2

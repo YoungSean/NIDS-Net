@@ -297,8 +297,8 @@ if __name__ == "__main__":
         ]
     )
     dataset = BOPTemplatePBR(
-        root_dir="/gpfsscratch/rech/tvi/uyb58rn/datasets/bop23_challenge/datasets/lmo",
-        template_dir="/gpfsscratch/rech/tvi/uyb58rn/datasets/bop23_challenge/datasets/templates_pyrender/lmo",
+        root_dir="../../../data_robi",
+        template_dir="../../../data_robi/robi_pyrender",
         obj_ids=None,
         level_templates=1,
         pose_distribution="all",

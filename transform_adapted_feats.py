@@ -9,13 +9,14 @@ input_features = 1024
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 ### bop challenge datasets
-lmo_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/lmo/descriptors_pbr.pth', num_object=8)
-tless_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/tless/descriptors_pbr.pth', num_object=30)
-tudl_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/tudl/descriptors_pbr.pth', num_object=3)
-icbin_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/icbin/descriptors_pbr.pth', num_object=2)
-itodd_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/itodd/descriptors_pbr.pth', num_object=28)
-hb_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/hb/descriptors_pbr.pth', num_object=33)
-ycbv_bo23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/ycbv/descriptors_pbr.pth', num_object=21)
+# lmo_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/lmo/descriptors_pbr.pth', num_object=8)
+# tless_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/tless/descriptors_pbr.pth', num_object=30)
+# tudl_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/tudl/descriptors_pbr.pth', num_object=3)
+# icbin_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/icbin/descriptors_pbr.pth', num_object=2)
+# itodd_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/itodd/descriptors_pbr.pth', num_object=28)
+# hb_bop23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/hb/descriptors_pbr.pth', num_object=33)
+# ycbv_bo23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/ycbv/descriptors_pbr.pth', num_object=21)
+robi_bo23_feature_dataset = FeatureDataset(data_json='datasets/bop23_challenge/datasets/templates_pyrender/robi/descriptors_pbr.pth', num_object=7)
 
 
 adapter_args = "bop_obj_shuffle_0529_weight_temp_0.05_epoch_500_lr_0.001_bs_32"
@@ -28,8 +29,8 @@ model.load_state_dict(torch.load(model_path))
 model.eval()  # Set the model to evaluation mode
 
 batch_size = 16
-dataset_folder = 'lmo'
-test_dataloader = DataLoader(lmo_bop23_feature_dataset, batch_size=batch_size, shuffle=False)
+dataset_folder = 'robi'
+test_dataloader = DataLoader(robi_bo23_feature_dataset, batch_size=batch_size, shuffle=False)
 
 adatped_features = []
 for inputs, _ in test_dataloader:

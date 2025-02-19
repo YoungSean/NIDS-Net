@@ -1,2 +1,3 @@
 local_root_dir: ./datasets/bop23_challenge
 slurm_root_dir: ./datasets/bop23_challenge
+project_root_dir: 

@@ -21,10 +21,13 @@ def main(argv):
         logging.info("GDINO: Predict bounding boxes, phrases, and confidence scores")
         bboxes, phrases, gdino_conf = gdino.predict(image_pil, text_prompt)
 
+        print(bboxes)
+
         logging.info("GDINO post processing")
         w, h = image_pil.size # Get image width and height 
         # Scale bounding boxes to match the original image size
         image_pil_bboxes = gdino.bbox_to_scaled_xyxy(bboxes, w, h)
+
 
         logging.info("SAM prediction")
         image_pil_bboxes, masks = SAM.predict(image_pil, image_pil_bboxes)
@@ -33,7 +36,10 @@ def main(argv):
         logging.info("Annotate the scaled image with bounding boxes, confidence scores, and labels, and display")
         bbox_annotated_pil = annotate(overlay_masks(image_pil, masks), image_pil_bboxes, gdino_conf, phrases)
 
-        bbox_annotated_pil.show()
+
+
+
+        bbox_annotated_pil.save("./imgs/annotedImg.jpg")
 
     except Exception as e:
         # Handle unexpected errors
@@ -44,5 +50,5 @@ if __name__ == "__main__":
     # Run the main function with the input image path
     # app.run(main, ['imgs/color-000078.png'])
     # app.run(main, ['imgs/color-000019.png'])
-    app.run(main, ['imgs/clutter-test.png'])
-    #app.run(main, ["/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000007.jpg"])
+     app.run(main, ['imgs/rgb_0.png'])
+    # app.run(main, ["/home/yangxiao/Documents/datasets/some_objects/data_fetch/object1/color-000007.jpg"])

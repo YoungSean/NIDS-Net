@@ -58,6 +58,7 @@ def run_inference(cfg: DictConfig):
         ref_dataloader_config._target_ = "src.dataloader.bop_pbr.BOPTemplatePBR"
         ref_dataloader_config.root_dir = f"{query_dataloader_config.root_dir}"
         ref_dataloader_config.template_dir += f"templates_pyrender/{cfg.dataset_name}"
+        
         ref_dataset = instantiate(ref_dataloader_config)
         ref_dataset.load_processed_metaData(reset_metaData=True)
     else:

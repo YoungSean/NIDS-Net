@@ -185,7 +185,7 @@ class NIDSNET(pl.LightningModule):
         self.gdino = GroundingDINOObjectPredictor()
         self.SAM = SegmentAnythingPredictor(vit_model="vit_h")
         logging.info("Initialize GDINO and SAM done!")
-        self.use_adapter = False
+        self.use_adapter = True
         if self.use_adapter:
             self.adapter_type = 'weight'
             if self.adapter_type == 'clip':
@@ -193,7 +193,7 @@ class NIDSNET(pl.LightningModule):
                 model_path = os.path.join("./adapter_weights/bop23", weight_name)
                 self.adapter = ModifiedClipAdapter(1024, reduction=4, ratio=0.6).to('cuda')
             else:
-                weight_name = f"bop_obj_shuffle_weight_0430_temp_0.05_epoch_500_lr_0.001_bs_32_weights.pth"
+                weight_name = f"bop_obj_shuffle_0529_weight_temp_0.05_epoch_500_lr_0.001_bs_32_weights.pth"
                 model_path = os.path.join("./adapter_weights/bop23", weight_name)
                 self.adapter = WeightAdapter(1024, reduction=4).to('cuda')
             self.adapter.load_state_dict(torch.load(model_path))
@@ -208,6 +208,8 @@ class NIDSNET(pl.LightningModule):
         start_time = time.time()
         self.ref_data = {"descriptors": BatchedData(None), "cls_descriptors": BatchedData(None), "appe_descriptors": BatchedData(None)}
         descriptors_path = osp.join(self.ref_dataset.template_dir, "descriptors.pth")
+        print("-=-=-=-=-=-=-=-")
+        print(descriptors_path)
         # cls_descriptors_path = osp.join(self.ref_dataset.template_dir, "descriptors_cls.pth")  # for cls token
         if self.onboarding_config.rendering_type == "pbr":
             descriptors_path = descriptors_path.replace(".pth", "_pbr.pth")
@@ -225,6 +227,7 @@ class NIDSNET(pl.LightningModule):
             # object_features = torch.Tensor(feat_dict['features']).cuda()
             # self.ref_data["descriptors"] = object_features.view(-1, 42, 1024)
             # print("using adapted object features")
+            
         else:
             for idx in tqdm(
                 range(len(self.ref_dataset)),

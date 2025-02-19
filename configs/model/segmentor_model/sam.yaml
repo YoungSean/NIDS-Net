@@ -8,4 +8,4 @@ segmentor_width_size: ${model.segmentor_width_size}
 sam:
   _target_: src.model.sam.load_sam
   model_type: vit_h
-  checkpoint_dir: ${machine.root_dir}/pretrained/segment-anything/
+  checkpoint_dir: ckpts/sam_weights/

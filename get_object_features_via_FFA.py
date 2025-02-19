@@ -190,3 +190,5 @@ def get_object_features_via_dataloader(output_dir, json_filename, object_dataset
 
 # obj_features = get_object_features_via_dataloader('./obj_FFA', 'object_features_small.json', object_dataset, encoder, img_size=img_size)
 # print(obj_features.shape)
+
+

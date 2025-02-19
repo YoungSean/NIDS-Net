@@ -18,7 +18,7 @@ reference_dataloader:
 
 query_dataloader:
   _target_: src.dataloader.bop.BaseBOPTest
-  root_dir: ${machine.root_dir}/datasets/
+  root_dir: /home/panda/repos/SAM-6D/SAM-6D/Data/BOP/
   split:
   reset_metaData: True
   processing_config:
@@ -93,3 +93,7 @@ datasets:
     cad: tyol_models.zip
     test: tyol_test_bop19.zip
     obj_names: [001_obj, 002_obj, 003_obj, 004_obj, 005_obj, 006_obj, 007_obj, 008_obj, 009_obj, 010_obj, 011_obj, 012_obj, 013_obj, 014_obj, 015_obj, 016_obj, 017_obj, 018_obj, 019_obj, 020_obj, 021_obj]
+  robi:
+    cad: robi_models.zip
+    test: robi_test_bop19.zip
+    obj_names: [001_obj, 002_obj, 003_obj, 004_obj, 005_obj, 006_obj, 007_obj]

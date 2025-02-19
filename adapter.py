@@ -115,16 +115,16 @@ if __name__ == '__main__':
     dataset_name = f'insDet_{adapter_type}_0523'
     temperature = 0.05
     ratio = 0.6
-    feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features_vitl14_reg.json', num_object=100) # 100 objects in total
+    #feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features_vitl14_reg.json', num_object=100) # 100 objects in total
     # Assuming 'features' is your (N, 1024) tensor
     batch_size = 1024
 
     # robo_feature_dataset = FeatureDataset(data_json='./RoboTools_obj_feat/object_features.json', num_object=20) # 20 objects in total
-    # ycbv_feature_dataset = FeatureDataset(data_json='./BOP_obj_feat/ycbv_object_features.json', num_object=21) # 21 objects in total
+    ycbv_feature_dataset = FeatureDataset(data_json='./BOP_obj_feat/ycbv_object_features.json', num_object=21) # 21 objects in total
     # lmo_feature_dataset = FeatureDataset(data_json='./BOP_obj_feat/lmo_object_features.json', num_object=8)
 
 
-    cur_feature_dataset = feature_dataset
+    cur_feature_dataset = ycbv_feature_dataset
 
     # Example training loop
     input_features = 1024  # Size of the input feature vector, 1024 for large, 768 for base, 384 for small
@@ -145,6 +145,7 @@ if __name__ == '__main__':
     for epoch in range(epochs):
 
         for inputs, labels in dataloader: # in dataloader: tqdm(dataloader)
+            
             inputs = inputs.to(device)
             labels = labels.to(device)
             optimizer.zero_grad()
@@ -175,6 +176,7 @@ if __name__ == '__main__':
         test_dataloader = DataLoader(cur_feature_dataset, batch_size=batch_size, shuffle=False)
 
         adatped_features = []
+
         for inputs, labels in test_dataloader:
             inputs = inputs.to(device)
             # labels = labels.to(device)
@@ -183,6 +185,7 @@ if __name__ == '__main__':
                 # Perform inference using the model
                 # Your inference code here
                 adatped_features.append(outputs)
+
         adatped_features = torch.cat(adatped_features, dim=0)
         print(adatped_features.size())
         feat_dict = dict()

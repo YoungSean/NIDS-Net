@@ -28,22 +28,26 @@ def visualize(cfg: DictConfig) -> None:
     with open(cfg.input_file, 'r') as f:
         dets = json.load(f)
     logging.info(f'Loaded {len(dets)} detections')
+    
     dets = [det for det in dets if det['score'] > cfg.conf_threshold]
     logging.info(f'Keeping only {len(dets)} detections having score > {cfg.conf_threshold}')
     lmo_transform_id = {1:0, 5:1, 6:2, 8:3, 9:4,10:5,11:6,12:7}
     
-    
     # sort by (scene_id, frame_id)
     dets = sorted(dets, key=lambda x: (x['scene_id'], x['image_id']))
+   
+
     list_scene_id_and_frame_id = [(det['scene_id'], det['image_id']) for det in dets]
+    
     
     os.makedirs(cfg.output_dir, exist_ok=True)
     for idx, (scene_id, image_id) in tqdm(enumerate(list_scene_id_and_frame_id)):
+       
         if cfg.dataset_name == 'itodd':
             img = Image.open(f'{cfg.root_dir}/{cfg.dataset_name}/{split}/{scene_id:06d}/gray/{image_id:06d}.tif')
             img = img.convert('L')
         else:
-            img = Image.open(f'{cfg.root_dir}/{cfg.dataset_name}/{split}/{scene_id:06d}/rgb/{image_id:06d}.png')
+            img = Image.open(f'{"/home/panda/repos/SAM-6D/SAM-6D/Data/BOP"}/{cfg.dataset_name}/{split}/{scene_id:06d}/rgb/{image_id:06d}.png')
         rgb = img.copy()
         img = np.array(img)
         visualizer = CNOSVisualizer(object_names, img_size=img.shape[:2])

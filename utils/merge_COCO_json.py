@@ -71,7 +71,7 @@ if generate_pred_json:
             original_p2_anno = os.path.join(data_path, dataset, 'test/{:s}/current_scene_gt_coco.json'.format(scene))  # for RoboTools
         elif dataset == 'ycbv':
             original_p2_anno = os.path.join(data_path, dataset, 'test/{:s}/scene_gt_coco.json'.format(scene)) # for ycbv
-        pred_annos = os.path.join(data_path, dataset, 'test/{:s}/weight_adapter_mv10k20epoch_samH_coco_instances_results_prediction.json'.format(scene)) # weight_adapter_
+        pred_annos = os.path.join(data_path, dataset, 'test/{:s}/weight_adapter_PE_adapted2_cls_coco_instances_results_prediction.json'.format(scene)) # weight_adapter_
         coco = COCO(original_p2_anno)
         pred_annos = json.load(open(pred_annos))
 
@@ -85,7 +85,7 @@ if generate_pred_json:
             modified_pred_annos.append(ann)
         img_id_offset_pred += 3000 # maximum image id is around 2200 in ycbv dataset
     #
-    with open(os.path.join(data_path, dataset, 'test/weight_adapter_mv10k20epoch_samH_coco_instances_results_prediction_all.json'), 'w') as f: # weight_adapter_
+    with open(os.path.join(data_path, dataset, 'test/weight_adapter_PE_adapted2_cls_coco_instances_results_prediction_all.json'), 'w') as f: # weight_adapter_
         json.dump(modified_pred_annos, f)
 
 print('Total test images (split): {}'.format(new_im_id))

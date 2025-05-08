@@ -41,6 +41,12 @@ from utils.inference_utils import compute_similarity, stableMatching, get_bbox_m
     get_object_proposal, getColor, create_instances, nms, apply_nms, get_features
 from adapter import ModifiedClipAdapter, WeightAdapter
 
+from utils.inference_utils import FFA_preprocess, get_foreground_mask, get_cls_token
+import time
+import core.vision_encoder.pe as pe
+import core.vision_encoder.transforms as transforms
+from get_object_features_via_FFA import get_features_PE_FFA
+
 logger = logging.getLogger("dinov2")
 
 
@@ -96,7 +102,7 @@ def get_args_parser(
 
 # Default args and initialize model
 args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
-imsize = 448
+imsize = 336
 tag = "mask"  # bbox
 args = args_parser.parse_args()
 print("test_path: ", args.test_path)
@@ -106,12 +112,26 @@ print("test_path: ", args.test_path)
 os.makedirs(args.output_dir, exist_ok=True)
 
 # model, autocast_dtype = setup_and_build_model(args)
-encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14_reg')
-encoder.to('cuda')
-encoder.eval()
+model_name = "PE-Core-L14-336" #"PE-Spatial-G14-448" #"PE-Core-L14-336" # L14-336, G14-448
+imsize = int(model_name[-3:]) 
+if torch.cuda.is_available():
+    print('GPU is available. Use GPU for this script')
+else:
+    print('Use CPU for this demo')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-use_adapter = False
-adapter_type = "clip"
+img_size = imsize
+
+model = pe.CLIP.from_config(model_name, pretrained=True)  # Downloads from HF
+encoder = model.to(device)
+preprocess = transforms.get_image_transform(encoder.image_size)
+
+# encoder = torch.hub.load('facebookresearch/dinov2', model_name) # 'dinov2_vitl14_reg'
+# encoder.to('cuda')
+# encoder.eval()
+
+use_adapter = True
+adapter_type = "weight"  
 if use_adapter:
     # Assuming the model's architecture is defined in 'FeatureVectorModel' class
     input_features = 1024
@@ -121,7 +141,8 @@ if use_adapter:
         adapter = ModifiedClipAdapter(input_features, reduction=4, ratio=0.6).to('cuda')
 
     elif adapter_type == "weight":
-        adapter_args = 'ycbv_weighted_10sigmoid_ratio_0.6_temp_0.05_epoch_40_lr_0.001_bs_512_vec_reduction_4_L2e4_vitl_reg'
+        #adapter_args = 'ycbv_weighted_10sigmoid_ratio_0.6_temp_0.05_epoch_40_lr_0.001_bs_512_vec_reduction_4_L2e4_vitl_reg'
+        adapter_args = 'PE-Core-L14-336_ycbv_freq4_weight_05062025_temp_0.05_epoch_160_lr_0.001_bs_1024_vec_reduction_4'
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = WeightAdapter(input_features, reduction=4).to('cuda')
     # Load the weights
@@ -132,8 +153,8 @@ if use_adapter:
     print('Model weights loaded and model is set to evaluation mode.')
 
 
-output_dir = './BOP_obj_feat'
-json_filename = 'ycbv_object_features.json'
+output_dir = './object_pe_features' #'./BOP_obj_feat'
+json_filename = 'PE-Core-L14-336_ycbv_freq4_original_cls.json' #'ycbv_object_features.json'
 if use_adapter:
     output_dir ='./adapted_obj_feats'
     json_filename = adapter_args+'.json'
@@ -190,10 +211,21 @@ for image_path in tqdm(image_paths):
     for i in range(len(cropped_imgs)):
         img = cropped_imgs[i]
         mask = cropped_masks[i]
-        ffa_feature = get_features([img], [mask], encoder, img_size=imsize)  # 448 -> 336
-        # ffa_feature = adapter(ffa_feature)
-        # ffa_feature = get_weighted_FFA_features([img], [mask], encoder, weighted_cnn, img_size=imsize)
-        scene_features.append(ffa_feature)
+        # ffa_feature = get_features([img], [mask], encoder, img_size=imsize)  # 448 -> 336
+        # # ffa_feature = adapter(ffa_feature)
+        # # ffa_feature = get_weighted_FFA_features([img], [mask], encoder, weighted_cnn, img_size=imsize)
+        # scene_features.append(ffa_feature)
+        with torch.no_grad():
+            img = preprocess(img).unsqueeze(0).to(device)
+            image_feature = encoder.encode_image(img)
+            if use_adapter:
+                image_feature = adapter(image_feature)
+            image_feature /= image_feature.norm(dim=-1, keepdim=True)
+        scene_features.append(image_feature)
+    #     ffa_feature = get_features([img], [mask], encoder, img_size=imsize)
+    #     if use_adapter:
+    #         ffa_feature = adapter(ffa_feature)
+    #    scene_features.append(ffa_feature)
     scene_features = torch.cat(scene_features, dim=0)
     scene_features = nn.functional.normalize(scene_features, dim=1, p=2)
 
@@ -313,7 +345,7 @@ print(f"Total running time: {end_time - start_time} seconds")
 # with open(os.path.join(args.output_dir, "adapted_coco_instances_results.json"), "w") as f:
 #     json.dump(results, f)
 
-prediction_json = "0515_samH_coco_instances_results_prediction.json"
+prediction_json = "PE_coco_instances_results_prediction.json"
 if use_adapter:
     prediction_json = adapter_type + '_adapted_' + prediction_json
 with open(os.path.join(args.test_path, prediction_json), "w") as f:

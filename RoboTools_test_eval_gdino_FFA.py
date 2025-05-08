@@ -38,7 +38,12 @@ from utils.instance_det_dataset import RealWorldDataset
 from utils.inference_utils import compute_similarity, stableMatching, get_bbox_masks_from_gdino_sam, \
     get_object_proposal, getColor, create_instances, nms, apply_nms, get_features, get_features_via_batch_tensor, get_object_proposal_tensor
 from adapter import ModifiedClipAdapter, WeightAdapter
+
+from utils.inference_utils import FFA_preprocess, get_foreground_mask, get_cls_token
 import time
+import core.vision_encoder.pe as pe
+import core.vision_encoder.transforms as transforms
+from get_object_features_via_FFA import get_features_PE_FFA
 
 logger = logging.getLogger("dinov2")
 
@@ -94,20 +99,35 @@ def get_args_parser(
 # In[8]:
 
 # Default args and initialize model
-args_parser = get_args_parser(description="Grounded SAM-DINOv2 Instance Detection")
-imsize = 448
+args_parser = get_args_parser(description="Grounded SAM-PE Instance Detection")
+imsize = 336
 tag = "mask"  # bbox
 args = args_parser.parse_args()
 print("test_path: ", args.test_path)
-# args = args_parser.parse_args(args=["--test_path", "datasets/RoboTools/test/000011",
-#                                     "--output_dir", "exps/eval_robotools_all_" + str(imsize) + "_" + tag,
+# args = args_parser.parse_args(args=["--test_path", "datasets/RoboTools/test/000001",
+#                                     "--output_dir", "exps/pe_adapted_eval_robotools_" + str(imsize) + "_" + tag,
 #                                     ])
 os.makedirs(args.output_dir, exist_ok=True)
 
 # model, autocast_dtype = setup_and_build_model(args)
-encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14_reg')
-encoder.to('cuda')
-encoder.eval()
+model_name = "PE-Core-L14-336" #"PE-Spatial-G14-448" #"PE-Core-L14-336" # L14-336, G14-448
+imsize = int(model_name[-3:]) 
+if torch.cuda.is_available():
+    print('GPU is available. Use GPU for this script')
+else:
+    print('Use CPU for this demo')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+img_size = imsize
+
+
+# encoder = torch.hub.load('facebookresearch/dinov2', model_name) # 'dinov2_vitl14_reg'
+# encoder.to('cuda')
+# encoder.eval()
+
+model = pe.CLIP.from_config(model_name, pretrained=True)  # Downloads from HF
+encoder = model.to(device)
+preprocess = transforms.get_image_transform(encoder.image_size)
 
 use_adapter = True
 adapter_type = "weight"
@@ -119,7 +139,8 @@ if use_adapter:
         model_path = 'adapter_weights/adapter2FC/'+adapter_args+'_weights.pth'
         adapter = ModifiedClipAdapter(input_features, reduction=4, ratio=0.6).to('cuda')
     elif adapter_type == "weight":
-        adapter_args = ' robo_0421_01_weight_temp_0.05_epoch_80_lr_0.002_bs_1024_vec_reduction_4_L2e4_vitl_reg'
+        # adapter_args = 'robo_0421_01_weight_temp_0.05_epoch_80_lr_0.002_bs_1024_vec_reduction_4_L2e4_vitl_reg'
+        adapter_args = 'PE-Core-L14-336_robotools_weight_05062025_temp_0.05_epoch_160_lr_0.001_bs_1024_vec_reduction_4'
         model_path = 'adapter_weights/adapter2FC/' + adapter_args + '_weights.pth'
         adapter = WeightAdapter(input_features, reduction=4).to('cuda')
 
@@ -132,11 +153,11 @@ if use_adapter:
 
 
 
-output_dir = './RoboTools_obj_feat'
-json_filename = 'object_features.json'
+output_dir = './object_pe_features' #'./RoboTools_obj_feat'
+json_filename = 'PE-Core-L14-336_robotools_original_cls.json' #'object_features.json'
 if use_adapter:
     output_dir = './adapted_obj_feats'
-    json_filename = 'robo_'+adapter_args + '.json'
+    json_filename = adapter_args + '.json' # 'robo_'+adapter_args + '.json'
     print(f'Adapted Object Features: {json_filename}.')
 
 with open(os.path.join(output_dir, json_filename), 'r') as f:
@@ -191,26 +212,23 @@ for image_path in tqdm(image_paths):
     scene_name = os.path.basename(image_path).split('.')[0]
     scene_name_list.append(scene_name)
     accurate_bboxs, masks = get_bbox_masks_from_gdino_sam(image_path, gdino, SAM, visualize=False)
-    masks = masks.squeeze(1).to(torch.float32)
-    rois, sel_rois, cropped_imgs, cropped_masks = get_object_proposal_tensor(image_path, accurate_bboxs, masks,
-                                                                             img_size=448, rgb_normalize=rgb_normalize,
-                                                                             tag=tag, ratio=1.0, save_rois=False,
-                                                                             output_dir=args.output_dir)
-
+    mask = masks.cpu().numpy()
+    accurate_bboxs = accurate_bboxs.cpu().numpy()
+    rois, sel_rois, cropped_imgs, cropped_masks = get_object_proposal(image_path, accurate_bboxs, masks, tag=tag, ratio=1.0, save_rois=False, output_dir=args.output_dir)
     scene_features = []
-    batch_size = 32  # Define the batch size
-
-    dataset = TensorDataset(cropped_imgs, cropped_masks)
-    # Create a DataLoader
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-
-    # Iterate over the DataLoader
-    for image_batch, mask_batch in data_loader:
-        ffa_feature = get_features_via_batch_tensor(image_batch, mask_batch, encoder, img_size=imsize)
-        if use_adapter:
-            ffa_feature = adapter(ffa_feature)
-        # Extend the main feature list with the features from this batch
-        scene_features.append(ffa_feature)
+    num_imgs = len(cropped_imgs)
+    # for i in range(0, num_imgs, 16):
+    for i in range(num_imgs):
+        img = cropped_imgs[i]
+        mask = cropped_masks[i]
+        # ffa_feature= get_features([img], [mask], encoder,device=device, img_size=imsize)
+        with torch.no_grad():
+            img = preprocess(img).unsqueeze(0).to(device)
+            image_feature = encoder.encode_image(img)
+            if use_adapter:
+                image_feature = adapter(image_feature)
+            image_feature /= image_feature.norm(dim=-1, keepdim=True)
+        scene_features.append(image_feature)
     scene_features = torch.cat(scene_features, dim=0)
     scene_features = nn.functional.normalize(scene_features, dim=1, p=2)
 
@@ -326,10 +344,10 @@ print(f"Total running time: {end_time - start_time} seconds")
 
 
 # save final results
-with open(os.path.join(args.output_dir, "time_samH_coco_instances_results.json"), "w") as f:
+with open(os.path.join(args.output_dir, "PE_adapted2_original_cls_coco_instances_results.json"), "w") as f:
     json.dump(results, f)
 
-prediction_json = "0525_samH_coco_instances_results_prediction.json"
+prediction_json = "PE_adapted2_cls_coco_instances_results_prediction.json"
 if use_adapter:
     if adapter_type == "clip":
         prediction_json = 'clip_adapter_' + prediction_json

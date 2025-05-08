@@ -112,22 +112,23 @@ class InfoNCELoss(nn.Module):
 
 if __name__ == '__main__':
     adapter_type = 'weight'
-    dataset_name = f'insDet_{adapter_type}_0523'
+    model_name = "PE-Core-L14-336"
+    dataset_name = f'{model_name}_ycbv_freq4_{adapter_type}_05062025' # insDet
     temperature = 0.05
     ratio = 0.6
-    feature_dataset = FeatureDataset(data_json='./obj_FFA/object_features_vitl14_reg.json', num_object=100) # 100 objects in total
+    # feature_dataset = FeatureDataset(data_json='./object_pe_features/PE-Core-L14-336_robotools_original_cls.json', num_object=20) # 100 objects in total
     # Assuming 'features' is your (N, 1024) tensor
-    batch_size = 1024
-
+    batch_size = 1024 #1024
+    input_features = 1024  # Size of the input feature vector, 1280 for PE core G, 1024 for large, 768 for base, 384 for small
+    
     # robo_feature_dataset = FeatureDataset(data_json='./RoboTools_obj_feat/object_features.json', num_object=20) # 20 objects in total
-    # ycbv_feature_dataset = FeatureDataset(data_json='./BOP_obj_feat/ycbv_object_features.json', num_object=21) # 21 objects in total
-    # lmo_feature_dataset = FeatureDataset(data_json='./BOP_obj_feat/lmo_object_features.json', num_object=8)
+    ycbv_feature_dataset = FeatureDataset(data_json='./object_pe_features/PE-Core-L14-336_ycbv_freq4_original_cls.json', num_object=21) # 21 objects in total './BOP_obj_feat/ycbv_object_features.json'
+    # lmo_feature_dataset = FeatureDataset(data_json='./object_pe_features/PE-Core-L14-336_lmo_freq4_original_cls.json', num_object=8) # './BOP_obj_feat/lmo_object_features.json'
 
 
-    cur_feature_dataset = feature_dataset
+    cur_feature_dataset = ycbv_feature_dataset
 
     # Example training loop
-    input_features = 1024  # Size of the input feature vector, 1024 for large, 768 for base, 384 for small
     reduction = 4 # Reduction factor for the hidden layer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if adapter_type == 'clip':
@@ -138,7 +139,7 @@ if __name__ == '__main__':
         model = WeightAdapter(input_features, reduction=reduction).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4) #
     criterion = InfoNCELoss(temperature=temperature).to(device)
-    epochs = 40
+    epochs = 160
 
     dataloader = DataLoader(cur_feature_dataset, batch_size=batch_size, shuffle=False)
 
@@ -146,6 +147,7 @@ if __name__ == '__main__':
 
         for inputs, labels in dataloader: # in dataloader: tqdm(dataloader)
             inputs = inputs.to(device)
+            #print(f"inputs: {inputs.size()}")
             labels = labels.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)

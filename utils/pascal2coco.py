@@ -180,6 +180,7 @@ def getCOCOjson(root_path, save_path, factor=1.0, flag=None):
 
     with open(save_path, 'w', encoding='utf-8') as f:
         json.dump(dataset, f)
+    print('json file saved to %s' % save_path)
     print('ok')
 
 
@@ -219,10 +220,10 @@ if __name__ == '__main__':
 
     # test data
     
-    level = 'easy'  # 'all', 'hard', 'easy'
-    factor = 4
-    root_path = '../database/Scenes' #"../database/Scenes"
-    test_path = "../database/Data/test_" + str(factor) + '_' + str(level)  # "../database/Data/test_" + str(factor) + '_' + str(level)
+    level = 'hard'  # 'all', 'hard', 'easy'
+    factor = 1
+    root_path = 'database/Scenes-Test' #"../database/Scenes"
+    test_path = "database/Data-Test/test_" + str(factor) + '_' + str(level)  # "../database/Data/test_" + str(factor) + '_' + str(level)
     if not os.path.exists(os.path.join(test_path, 'images')):
         os.makedirs(os.path.join(test_path, 'images'))
     if not os.path.exists(os.path.join(test_path, 'annotations')):
@@ -238,18 +239,29 @@ if __name__ == '__main__':
                               if re.search('/*\.(jpg|jpeg|png|gif|bmp)', str(p))])
         anno_paths = sorted([p for p in glob.glob(os.path.join(root_path, level, '*/*'))
                              if re.search('/*\.xml', str(p))])
-    
-    for i, file_path in enumerate(zip(image_paths, anno_paths)):
-        file_name = 'test_' + '%03d' % i
-        img_extend = os.path.splitext(file_path[0])[-1]  # extend for image file
-        anno_extend = os.path.splitext(file_path[1])[-1]  # extend for image file
-    
-        shutil.copyfile(file_path[0], os.path.join(test_path, 'images', file_name + img_extend))
-        shutil.copyfile(file_path[1], os.path.join(test_path, 'annotations', file_name + anno_extend))
-    
-    getCOCOjson(os.path.join(test_path),
-                os.path.join(test_path, "instances_test_" + str(factor) + '_' + str(level) + ".json"),
-                factor=1/factor, flag='test')
+    #print('image_paths:', image_paths)
+    print('anno_paths:', anno_paths)
+    if anno_paths:
+        for i, file_path in enumerate(zip(image_paths, anno_paths)):
+            file_name = 'test_' + '%03d' % i
+            img_extend = os.path.splitext(file_path[0])[-1]  # extend for image file
+            anno_extend = os.path.splitext(file_path[1])[-1]  # extend for image file
+
+            shutil.copyfile(file_path[0], os.path.join(test_path, 'images', file_name + img_extend))
+            shutil.copyfile(file_path[1], os.path.join(test_path, 'annotations', file_name + anno_extend))
+        
+        getCOCOjson(os.path.join(test_path),
+                    os.path.join(test_path, "instances_test_" + str(factor) + '_' + str(level) + ".json"),
+                    factor=1/factor, flag='test')
+    else:
+        for i, file_path in enumerate(image_paths):
+            file_name = 'test_' + '%03d' % i
+            img_extend = os.path.splitext(file_path)[-1]  # extend for image file
+            #anno_extend = os.path.splitext(file_path[1])[-1]  # extend for image file
+
+            shutil.copyfile(file_path, os.path.join(test_path, 'images', file_name + img_extend))
+            #shutil.copyfile(file_path[1], os.path.join(test_path, 'annotations', file_name + anno_extend))
+        
     # height = 6144
     # width = 8192
     # minify(os.path.join(test_path, 'images'), os.path.join(test_path, 'test'),

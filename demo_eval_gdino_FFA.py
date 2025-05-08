@@ -46,6 +46,7 @@ from tqdm import trange
 from adapter import ModifiedClipAdapter, WeightAdapter
 from utils.img_utils import get_masked_image
 
+
 # logger = logging.getLogger("dinov2")
 
 

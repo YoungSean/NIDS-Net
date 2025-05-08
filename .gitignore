@@ -170,3 +170,4 @@ cython_debug/
 /dinov2/
 /robokit/RoboKit.egg-info/
 /robokit/RoboKit.egg-info/
+/perception_models/

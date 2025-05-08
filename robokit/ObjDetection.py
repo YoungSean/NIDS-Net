@@ -34,9 +34,9 @@ class ObjectPredictor(Logger):
     Root class for object predicton
     All other object prediction classes should inherit this
     """
-    def __init__(self):
+    def __init__(self, device="cuda"):
         super().__init__()
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = device if torch.cuda.is_available() else "cpu"
     
     def bbox_to_scaled_xyxy(self, bboxes: torch.tensor, img_w, img_h):
         """
@@ -193,7 +193,7 @@ class SegmentAnythingPredictor(ObjectPredictor):
     - predictor (SamPredictor): The predictor for the SAM model.
     """
 
-    def __init__(self, vit_model="vit_t"):
+    def __init__(self, vit_model="vit_t", device="cuda"):
         """
         Initialize the SegmentAnythingPredictor object.
         """
@@ -206,6 +206,7 @@ class SegmentAnythingPredictor(ObjectPredictor):
         }
         self.sam = sam_model_registry[vit_model](checkpoint=sam_weight_path[vit_model])
         self.mask_generator = SamAutomaticMaskGenerator(self.sam)  # generate masks for entire image
+        self.device = device if torch.cuda.is_available() else "cpu"
         self.sam.to(device=self.device)
         self.sam.eval()
         self.predictor = SamPredictor(self.sam)

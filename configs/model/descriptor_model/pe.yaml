@@ -1,0 +1,10 @@
+  _target_: src.model.dinov2.CustomPE
+  model_name: PE-Core-L14-336
+#  model:
+##     _target_: torch.hub.load
+##     repo_or_dir: facebookresearch/dinov2
+#     model: PE #${model.descriptor_model.model_name}
+  token_name: x_norm_clstoken
+  descriptor_width_size: 336 #${model.descriptor_width_size}
+  image_size: 336
+  chunk_size: 16

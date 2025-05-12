@@ -1,4 +1,4 @@
-from adapter_dataset import ObjectFeatureDataset
+from utils.adapter_dataset import ObjectFeatureDataset
 import torch
 
 from torch.utils.data import DataLoader, ConcatDataset
@@ -15,7 +15,7 @@ def main(cfg : DictConfig):
     print(original_cwd)
     combine_dataset = True
     adapter_type = cfg.params.adapter_type
-    dataset_name = f'bop_obj_shuffle_0529_{adapter_type}'
+    dataset_name = f'bop_obj_shuffle_05122025_{adapter_type}'
     # dataset_name = f'lmo_{adapter_type}'
     temperature = cfg.params.temperature
     batch_size = cfg.params.batch_size
@@ -23,23 +23,23 @@ def main(cfg : DictConfig):
 
     ### bop challenge datasets
     print(os.getcwd())
-    lmo_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/lmo/descriptors_pbr.pth',
+    lmo_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/lmo/pe_descriptors_pbr.pth',
                                                      num_object=8)
-    tless_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tless/descriptors_pbr.pth',
+    tless_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tless/pe_descriptors_pbr.pth',
                                                        num_object=30, label_offset=8)
-    tudl_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tudl/descriptors_pbr.pth',
+    tudl_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/tudl/pe_descriptors_pbr.pth',
                                                       num_object=3, label_offset=38)
-    icbin_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/icbin/descriptors_pbr.pth',
+    icbin_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/icbin/pe_descriptors_pbr.pth',
                                                        num_object=2, label_offset=41)
-    itodd_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/itodd/descriptors_pbr.pth',
+    itodd_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/itodd/pe_descriptors_pbr.pth',
                                                        num_object=28, label_offset=43)
-    hb_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/hb/descriptors_pbr.pth',
+    hb_bop23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/hb/pe_descriptors_pbr.pth',
                                                     num_object=33, label_offset=71)
-    ycbv_bo23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/ycbv/descriptors_pbr.pth',
+    ycbv_bo23_feature_dataset = ObjectFeatureDataset(data_json=f'{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender/ycbv/pe_descriptors_pbr.pth',
                                                      num_object=21, label_offset=104)
 
-    cur_feature_dataset = hb_bop23_feature_dataset
-
+    cur_feature_dataset = ycbv_bo23_feature_dataset
+    dataset_folder = "ycbv"
     # Example training loop
     input_features = cfg.params.input_features  # Size of the input feature vector
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -61,30 +61,33 @@ def main(cfg : DictConfig):
     else:
         dataloader = DataLoader(cur_feature_dataset, batch_size=batch_size, shuffle=shuffle)
 
-    for epoch in range(epochs):
-        for inputs, labels in dataloader:  # in dataloader: tqdm(dataloader)
-            inputs = inputs.view(-1, input_features).to(device)
-            labels = labels.view(-1).to(device)
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-        print(f'Epoch {epoch + 1}, Loss: {loss.item()}')
-
-    save_model = True
+    save_model = False
     adapter_args = f'{dataset_name}_temp_{temperature}_epoch_{epochs}_lr_{learning_rate}_bs_{batch_size}'
+    model_output_dir = f'{original_cwd}/adapter_weights/bop23'
     if save_model:
+        for epoch in range(epochs):
+            for inputs, labels in dataloader:  # in dataloader: tqdm(dataloader)
+                inputs = inputs.view(-1, input_features).to(device)
+                labels = labels.view(-1).to(device)
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+            print(f'Epoch {epoch + 1}, Loss: {loss.item()}')
         # Assuming your model is named 'model'
-        model_output_dir = f'{original_cwd}/adapter_weights/bop23'
         os.makedirs(model_output_dir, exist_ok=True)
         model_path = f'{model_output_dir}/{adapter_args}_weights.pth'  # Define the path where you want to save the model
         torch.save(model.state_dict(), model_path)
 
         print(f'Model weights saved to {model_path}')
+    else:
+        # Load the model weights
+        model_path = f'{model_output_dir}/{adapter_args}_weights.pth'
+        model.load_state_dict(torch.load(model_path))
+        print(f'Model weights loaded from {model_path}')
 
-    save_features = False
+    save_features = True
     if save_features:
         # Assuming model is already defined and loaded with trained weights
         model.eval()  # Set the model to evaluation mode
@@ -108,7 +111,8 @@ def main(cfg : DictConfig):
         feat_dict['features'] = adatped_features.detach().cpu().tolist()
         # feat_dict['ffm_features'] = ffm_features.detach().cpu().tolist()
         # output_dir = f'./bop23_obj_features/{dataset_folder}'
-        output_dir = f'{original_cwd}/adapted_obj_feats'
+        #output_dir = f'{original_cwd}/adapted_obj_feats'
+        output_dir = os.path.join(f"{original_cwd}/datasets/bop23_challenge/datasets/templates_pyrender", dataset_folder)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         json_filename = f'{adapter_args}.json'

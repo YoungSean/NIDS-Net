@@ -3,10 +3,10 @@ defaults:
   - machine: local
   - callback: base
   - data: bop
-  - model: cnos
+  - model: nids_net_pe #cnos
   # - model: cnos_fast
   - _self_
 
 save_dir: ${machine.root_dir}/results/${name_exp}
-name_exp: NIDS_NET2_FFA_APPE_max_0530_BPR_224_exps_baseline
+name_exp: NIDS_NET_PE_weight_adapted
 dataset_name:
